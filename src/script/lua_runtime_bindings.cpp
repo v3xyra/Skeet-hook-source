@@ -11,6 +11,7 @@ void skeet_lua_runtime_layout(unsigned int output[3]);
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #include <windows.h>
+#include <psapi.h>
 #include <cstdio>
 #include <cstring>
 #include <limits>
@@ -147,11 +148,68 @@ extern "C" int skeet_lua_bytecode_allowed(lua_State* state) {
     return runtime && runtime->loading_builtin;
 }
 
-// Script addresses refer to the former image, not the relocated source DLL.
-// Never let an unrelated allocation at those addresses become a patch target.
+namespace {
+constexpr std::uintptr_t legacy_begin = 0x43310000u, legacy_end = 0x4360c000u;
+constexpr DWORD readable = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
+                           PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY;
+constexpr DWORD writable = PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE |
+                           PAGE_EXECUTE_WRITECOPY;
+constexpr DWORD executable = PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
+                             PAGE_EXECUTE_WRITECOPY;
+
+struct AddressRange {
+    std::uintptr_t begin;
+    std::size_t size;
+};
+
+// These ranges select the cheaper Windows query. They never cache access rights.
+thread_local struct {
+    AddressRange ranges[4]{};
+    unsigned next = 0;
+} large_allocations;
+
+std::size_t accessible_span(std::uintptr_t address, DWORD access, std::size_t request) {
+    // The client and LuaJIT are built exclusively for Windows x86 (4 KiB pages).
+    constexpr std::size_t page_size = 4096;
+    const auto page_left = page_size - (address & (page_size - 1));
+    if (access == readable && request <= page_left) {
+        for (const auto& range : large_allocations.ranges) {
+            if (address - range.begin >= range.size)
+                continue;
+            PSAPI_WORKING_SET_EX_INFORMATION page{};
+            page.VirtualAddress = reinterpret_cast<void*>(address);
+            if (QueryWorkingSetEx(GetCurrentProcess(), &page, sizeof(page)) &&
+                page.VirtualAttributes.Valid) {
+                const auto protection = page.VirtualAttributes.Win32Protection;
+                return !(protection & (PAGE_GUARD | PAGE_NOACCESS)) && (protection & readable)
+                           ? page_left : 0;
+            }
+            // Nonresident pages have no working-set protection field.
+            break;
+        }
+    }
+    MEMORY_BASIC_INFORMATION region{};
+    if (!VirtualQuery(reinterpret_cast<void*>(address), &region, sizeof(region)) ||
+        region.State != MEM_COMMIT || (region.Protect & (PAGE_GUARD | PAGE_NOACCESS)) ||
+        !(region.Protect & access))
+        return 0;
+    const auto base = reinterpret_cast<std::uintptr_t>(region.BaseAddress);
+    if (region.RegionSize >= 4 * 1024 * 1024 && access == readable) {
+        const auto allocation = reinterpret_cast<std::uintptr_t>(region.AllocationBase);
+        // VirtualQuery scans from the queried page to the end of the region.
+        // Earlier pages in that allocation may also benefit from a page query.
+        const AddressRange range{allocation, (base - allocation) + region.RegionSize};
+        auto& slot = large_allocations.ranges[large_allocations.next];
+        slot = range;
+        large_allocations.next = (large_allocations.next + 1) % 4;
+    }
+    return region.RegionSize - (address - base);
+}
+} // namespace
+
+// Preserve the former image exclusion even when another allocation occupies it.
 extern "C" int skeet_lua_ffi_access(const void* pointer, std::size_t length, int mode) {
     const auto first = reinterpret_cast<std::uintptr_t>(pointer);
-    constexpr std::uintptr_t legacy_begin = 0x43310000u, legacy_end = 0x4360c000u;
     if (mode == 3) // Pointer argument: null and OS pseudo-handles remain legal.
         return first < legacy_begin || first >= legacy_end;
     if (!length)
@@ -161,50 +219,33 @@ extern "C" int skeet_lua_ffi_access(const void* pointer, std::size_t length, int
     const auto last = first + length - 1;
     if (first < legacy_end && last >= legacy_begin)
         return 0;
+    const auto access = mode == 2 ? executable : mode == 1 ? writable : readable;
     for (auto address = first;;) {
-        MEMORY_BASIC_INFORMATION region{};
-        if (!VirtualQuery(reinterpret_cast<const void*>(address), &region, sizeof(region)) ||
-            region.State != MEM_COMMIT || (region.Protect & (PAGE_GUARD | PAGE_NOACCESS)))
+        const auto available = accessible_span(address, access, length);
+        if (!available)
             return 0;
-        const DWORD readable = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READ |
-                               PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY;
-        const DWORD writable =
-            PAGE_READWRITE | PAGE_WRITECOPY | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY;
-        const DWORD executable =
-            PAGE_EXECUTE | PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY;
-        if (!(region.Protect & (mode == 2 ? executable : mode == 1 ? writable : readable)))
-            return 0;
-        const auto end = reinterpret_cast<std::uintptr_t>(region.BaseAddress) + region.RegionSize;
-        if (!end || last < end)
+        if (available >= length)
             return 1;
-        if (end <= address)
-            return 0;
-        address = end;
+        length -= available;
+        address += available;
     }
 }
 
 // The trace recorder also uses this bounded scan; strlen must not cross into
 // an inaccessible page before an FFI guard has a chance to run.
 extern "C" int skeet_lua_ffi_strlen(const char* text) {
-    constexpr std::uintptr_t legacy_begin = 0x43310000u, legacy_end = 0x4360c000u;
-    constexpr DWORD readable = PAGE_READONLY | PAGE_READWRITE | PAGE_WRITECOPY |
-                               PAGE_EXECUTE_READ | PAGE_EXECUTE_READWRITE |
-                               PAGE_EXECUTE_WRITECOPY;
     std::size_t length = 0;
     for (;;) {
         const auto address = reinterpret_cast<std::uintptr_t>(text);
-        MEMORY_BASIC_INFORMATION region{};
-        if ((address >= legacy_begin && address < legacy_end) ||
-            !VirtualQuery(text, &region, sizeof(region)) || region.State != MEM_COMMIT ||
-            (region.Protect & (PAGE_GUARD | PAGE_NOACCESS)) || !(region.Protect & readable))
+        if (address >= legacy_begin && address < legacy_end)
             return -1;
-        auto end = reinterpret_cast<std::uintptr_t>(region.BaseAddress) + region.RegionSize;
-        if (end <= address)
+        // Short strings need only their first page. For longer strings query a
+        // contiguous region once instead of querying every subsequent page.
+        auto available = accessible_span(address, readable, length ? SIZE_MAX : 1);
+        if (!available)
             return -1;
-        // Query each region once and never scan into the former image range.
-        if (address < legacy_begin && end > legacy_begin)
-            end = legacy_begin;
-        const auto available = end - address;
+        if (address < legacy_begin && available > legacy_begin - address)
+            available = legacy_begin - address;
         const auto* terminator = static_cast<const char*>(std::memchr(text, 0, available));
         const auto count = terminator ? static_cast<std::size_t>(terminator - text) : available;
         if (count > static_cast<std::size_t>(INT_MAX) - length)
@@ -212,7 +253,9 @@ extern "C" int skeet_lua_ffi_strlen(const char* text) {
         length += count;
         if (terminator)
             return static_cast<int>(length);
-        text = reinterpret_cast<const char*>(end);
+        if (available > UINTPTR_MAX - address)
+            return -1;
+        text = reinterpret_cast<const char*>(address + available);
     }
 }
 
