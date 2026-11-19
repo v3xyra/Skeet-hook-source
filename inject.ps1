@@ -55,7 +55,8 @@ try {
             $targets = @($targets | Where-Object { $_.Path -eq $expectedGame })
         }
         if ($targets.Count -ne 1) {
-            throw 'Exactly one running csgo.exe is required. Start the game or select it with -ProcessId or -GamePath.'
+            if (!$targets.Count) { throw 'No matching CS:GO process.' }
+            throw 'Select one CS:GO instance with -ProcessId.'
         }
         $loaderArguments += @('--pid', [string]$targets[0].Id, '--reuse')
         if ($Inspect) {

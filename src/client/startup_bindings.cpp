@@ -23,7 +23,8 @@ PostInitializationState PostInitializationData::state() const {
             d.native_cell<StartupFactory>(0x43468B9Cu),
             d.native_cell<void*>(0x43476424u),
             d.native_cell<StartupRefreshSource*>(0x43467C04u),
-            d.native_cell<std::uint8_t>(0x43475BD2u)};
+            d.native_cell<std::uint8_t>(0x43475BD2u),
+            d.native_cell<std::uint8_t>(0x434758B0u)};
 }
 CommandResetState PostInitializationData::command_reset() const {
     auto& d = *data_;

@@ -1,4 +1,5 @@
 #include "skeet/client/entity_command_owner.hpp"
+#include "skeet/client/startup_reset.hpp"
 #include "skeet/client/verified_command.hpp"
 #include "skeet/events/game_events.hpp"
 #include "skeet/network/packet_control.hpp"
@@ -173,15 +174,10 @@ void process_entity_command_phase1(EntityCommandOwner& owner, void* player, Comm
     const auto& b = owner.bindings;
     const auto& o = b.offsets;
     auto& state = owner.state;
-    if (!*b.startup_guard_4347bdac && !*b.startup_guard_4347bd78 && !*b.connection_checked) {
-        *b.connection_checked = 1;
-        if (engine::invoke<bool>(b.engine_client, 27)) {
-            if (b.connection_notification)
-                b.connection_notification();
-            else
-                *b.deferred_connection = 1;
-        }
-    }
+    if (!*b.startup_guard_4347bdac && !*b.startup_guard_4347bd78 && !*b.connection_checked &&
+        engine::invoke<bool>(b.engine_client, 27))
+        request_initial_connection_refresh(*b.connection_checked, *b.deferred_connection,
+                                           b.connection_notification.get());
     const auto update_frame = *b.update_frame;
     if (update_frame <= 0)
         return;

@@ -31,4 +31,6 @@ void reset_command_state(CommandResetState state) noexcept; // 433D6630
 // 4341F780..4341F790 clears only the first dword of each eight-byte record.
 using StartupAcknowledgement = std::array<std::uint32_t, 2>;
 void reset_startup_acknowledgements(std::span<StartupAcknowledgement, 150> records) noexcept;
+void request_initial_connection_refresh(std::uint8_t& requested, std::uint8_t& pending,
+                                        void (*notify)());
 }

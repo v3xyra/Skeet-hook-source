@@ -7,7 +7,6 @@
 #include "skeet/menu/root_menu.hpp"
 #include <bit>
 #include <cstring>
-#include <stdexcept>
 
 namespace skeet::skins {
 namespace {
@@ -36,16 +35,16 @@ void sync_legit_weapon_kind(std::int32_t kind, ui::LegitWeaponSelector& selector
 }
 void CommandRuntime::phase4(const client::CommandFrame& frame, void* local_player) {
     refresh_.process_deferred_hud_refresh();
+    if (!local_player)
+        return;
     const auto definition = frame.weapon_id_d8;
     if (static_cast<std::int32_t>(previous_weapon) == definition)
         return;
-    previous_weapon = std::bit_cast<std::int16_t>(static_cast<std::uint16_t>(definition));
-    if (!local_player)
-        throw std::logic_error("SKINS phase4 requires its live local player");
-    std::int32_t team;
     const auto team_offset = std::ptrdiff_t(*offsets_.pointers.at(0x434688B0) ^
                                             offsets_.keys.at(0x4346A518) ^ 0x8B5586F6u);
+    std::int32_t team;
     std::memcpy(&team, static_cast<const std::byte*>(local_player) + team_offset, sizeof(team));
+    previous_weapon = std::bit_cast<std::int16_t>(static_cast<std::uint16_t>(definition));
     auto* menu = menu_;
     if (static_cast<std::uint32_t>(definition) <= 1000u) {
         menu->skins_menu().select_weapon(definition, team);

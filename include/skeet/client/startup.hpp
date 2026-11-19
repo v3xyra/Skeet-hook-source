@@ -61,7 +61,8 @@ struct PostInitializationState {
     StartupFactory& second_factory; // 43468B9C, actual resolved engine function
     void*& second_result; // 43476424
     StartupRefreshSource*& refresh_source; // 43467C04
-    std::uint8_t& connected; // 43475BD2
+    std::uint8_t& full_update_pending; // 43475BD2
+    std::uint8_t& initial_refresh_requested; // 434758B0
 };
 
 // Live decoded views of the canonical encoded engine ConVar words.

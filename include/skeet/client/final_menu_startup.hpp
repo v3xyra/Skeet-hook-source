@@ -23,8 +23,7 @@ void capture_startup_configuration_baseline(ClientRuntimeStorage&);
 class FinalMenuStartupTail {
 public:
     FinalMenuStartupTail(ClientRuntimeStorage&, ui::MainMenuWindowOwner&,
-                         misc::SettingsRuntimeOwner&, ConfigStorageOwner&, ui::StartupRenderer&,
-                         ui::StartupRegistryImports);
+                         misc::SettingsRuntimeOwner&, ConfigStorageOwner&, ui::StartupRenderer&);
     void initialize();
     bool complete() const noexcept {
         return complete_;
@@ -36,7 +35,6 @@ private:
     misc::SettingsRuntimeOwner& settings_;
     ConfigStorageOwner& configuration_;
     ui::StartupRenderer& renderer_;
-    ui::StartupRegistryImports imports_;
     bool started_ = false, complete_ = false;
 };
 } //namespace skeet::client

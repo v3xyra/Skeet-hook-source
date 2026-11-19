@@ -130,8 +130,7 @@ struct SourceApplication::Data {
         features->menu_settings().capture_default_layout(menu);
         stage = "saved menu settings";
         menu_tail = std::make_unique<FinalMenuStartupTail>(
-            storage, *main_window, features->menu_settings(), *presets, *renderer,
-            ui::native_startup_registry_imports());
+            storage, *main_window, features->menu_settings(), *presets, *renderer);
         menu_tail->initialize();
         stage = "post initialization contexts and feature callbacks";
         post = std::make_unique<PostInitializationOwner>(

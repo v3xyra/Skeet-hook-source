@@ -142,7 +142,6 @@ class Process:
             checked(exit_code(worker, c.byref(code)), 'GetExitCodeThread')
             if not code.value:
                 raise RuntimeError('Windows LoadLibraryW rejected the source DLL')
-            print(f'LoadLibraryW completed: module={code.value:#010x}', flush=True)
         finally:
             if completed or not worker:
                 release(self.handle, remote, 0, 0x8000)
@@ -227,8 +226,7 @@ def main():
         raise ValueError('Select the built skeet_client.dll')
     state_rva, error_rva = diagnostic_rvas(dll)
     if args.check:
-        print(f'Validated Windows x86 source DLL: {dll}', flush=True)
-        print(f'Diagnostic RVAs: status={state_rva:#x}, error={error_rva:#x}', flush=True)
+        print(f'{dll.name}: OK', flush=True)
         return 0
     loaded = modules(args.pid).get(dll.name.lower())
     if loaded:
@@ -236,14 +234,12 @@ def main():
             raise RuntimeError(f'A source DLL is already loaded from {loaded[2]}. Restart CS:GO to use {dll}.')
         if args.reuse:
             args.inspect = True
-            print('Source DLL is already loaded. Inspecting it; restart CS:GO to use a newer build.', flush=True)
         elif not args.inspect:
             raise RuntimeError('The source DLL is already loaded; use --inspect or --reuse')
     elif args.inspect:
         raise RuntimeError('The source DLL is not loaded in this process')
     process = Process(args.pid, not args.inspect)
     try:
-        print(f'Target: {process.path}, PID={args.pid}', flush=True)
         if not args.inspect:
             process.load(dll)
         deadline = time.monotonic() + 30
@@ -257,15 +253,18 @@ def main():
                 raise RuntimeError('The loaded module path differs from the requested source DLL')
             state = struct.unpack('<I', process.read(base + state_rva, 4))[0]
             if state != previous:
-                print(f'Source status={state} (1=initializing, 2=ready, 3=startup failed, 4=cleanup failed, 5=stopping, 6=stopped)', flush=True)
+                if state == 1:
+                    print('Initializing...', flush=True)
                 previous = state
             if state in (3, 4):
-                print(process.read(base + error_rva, 4096).split(b'\0', 1)[0].decode('utf-8', 'replace'), flush=True)
+                reason = process.read(base + error_rva, 4096).split(b'\0', 1)[0].decode('utf-8', 'replace')
+                print(reason or ('Startup failed.' if state == 3 else 'Cleanup failed.'), file=sys.stderr, flush=True)
                 return 2
             if state != 1 or time.monotonic() >= deadline:
                 if state == 2:
+                    print('Already loaded.' if args.inspect else 'Loaded.', flush=True)
                     return 0
-                print('Source initialization did not reach READY.', file=sys.stderr, flush=True)
+                print('Initialization timed out.' if state == 1 else f'Not ready (status {state}).', file=sys.stderr, flush=True)
                 return 3
             time.sleep(0.25)
     finally:

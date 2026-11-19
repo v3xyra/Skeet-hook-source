@@ -139,7 +139,8 @@ void PostInitializationRuntime::initialize() { // 4341F57F..4341F7CD
         for (auto* object : objects)
             engine::invoke<void>(object, 7);
         bindings_.window.input.enable_cursor();
-        state_.connected = 1;
+        request_initial_connection_refresh(state_.initial_refresh_requested,
+                                           state_.full_update_pending, nullptr);
     }
     install_startup_window(bindings_.menu.window(), bindings_.window);
 }

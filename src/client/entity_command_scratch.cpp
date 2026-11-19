@@ -1,4 +1,5 @@
 #include "entity_command_scratch.hpp"
+#include "skeet/client/startup_reset.hpp"
 #include "skeet/engine/interface_call.hpp"
 #include "skeet/engine/netvars.hpp"
 #include "skeet/engine/decoded_offset.hpp"
@@ -202,15 +203,9 @@ void initialize_prediction_scratch(EntityCommandOwner* const& active,
         return;
     if (!local_creation) {
         auto& checked = image.native_cell<std::uint8_t>(0x434758B0u);
-        if (checked)
-            return;
-        checked = 1;
-        if (!engine::invoke<bool>(image.native_cell<void*>(0x4346A514u), 27))
-            return;
-        if (auto entry = image.native_cell<void (*)()>(0x43468BF0u))
-            entry();
-        else
-            image.native_cell<std::uint8_t>(0x43475BD2u) = 1;
+        if (!checked && engine::invoke<bool>(image.native_cell<void*>(0x4346A514u), 27))
+            request_initial_connection_refresh(checked, image.native_cell<std::uint8_t>(0x43475BD2u),
+                                               image.native_cell<void (*)()>(0x43468BF0u));
         return;
     }
     if (owner->prediction_names.size() != 8)

@@ -25,7 +25,7 @@ set_source_files_properties(third_party/miniz/miniz.c PROPERTIES
 target_include_directories(skeet_core PUBLIC include)
 target_compile_features(skeet_core PUBLIC cxx_std_20)
 include(cmake/luajit-x86.cmake)
-target_link_libraries(skeet_core PUBLIC user32 gdi32 ntdll shell32 ole32)
+target_link_libraries(skeet_core PUBLIC user32 gdi32 ntdll shell32 ole32 advapi32)
 if(MSVC)
   target_compile_options(skeet_core PRIVATE /W4 /WX /fp:precise)
 else()
@@ -65,7 +65,7 @@ if(MINGW AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
       "${_skeet_luajit_archive}"
       -Wl,--exclude-all-symbols -Wl,--no-insert-timestamp
       "-Wl,--threads=${SKEET_LINK_THREADS}"
-      -luser32 -lgdi32 -lntdll -lshell32 -lole32 -o "${_skeet_linkcheck}"
+      -luser32 -lgdi32 -lntdll -lshell32 -lole32 -ladvapi32 -o "${_skeet_linkcheck}"
     DEPENDS skeet_core "${_skeet_luajit_archive}"
     COMMENT "Checking all recovered x86 source definitions at link time"
     JOB_POOL skeet_link

@@ -25,4 +25,17 @@ void reset_startup_acknowledgements(std::span<StartupAcknowledgement, 150> recor
     for (auto& record : records)
         record[0] = 0xffffffffu;
 }
+
+void request_initial_connection_refresh(std::uint8_t& requested, std::uint8_t& pending,
+                                        void (*notify)()) {
+    // Startup and the first player command can run in either order on an open map.
+    // The pending bit can be consumed between them.
+    if (requested)
+        return;
+    requested = 1;
+    if (notify)
+        notify();
+    else
+        pending = 1;
+}
 }

@@ -1,8 +1,10 @@
 #include "skeet/menu/startup_registry.hpp"
-#include "skeet/engine/owner_allocation.hpp"
 #include <array>
 #include <cstring>
+#include <memory>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
@@ -11,82 +13,86 @@
 
 namespace skeet::ui {
 namespace {
-#if defined(_WIN32)
-template <class Function> Function imported(const char* name) {
-    const auto module = GetModuleHandleA("ntdll.dll");
-    const auto address = module ? GetProcAddress(module, name) : nullptr;
-    if (!address)
-        throw std::runtime_error("A required startup registry export is missing");
-    return reinterpret_cast<Function>(address);
-}
-#endif
 template <class T> void unlink(T& link) {
     link.previous->next = link.next;
     link.next->previous = link.previous;
 }
+const char* settings_header_error(std::span<const std::byte> stream) {
+    if (stream.size() < 12)
+        return "truncated settings header";
+    std::uint32_t magic;
+    std::memcpy(&magic, stream.data(), sizeof magic);
+    return magic == config_stream_magic ? nullptr : "unrecognized settings signature";
 }
-StartupRegistryImports native_startup_registry_imports() {
 #if defined(_WIN32)
-    StartupRegistryImports imports{};
-#define REGISTRY_IMPORT(member, name) imports.member = imported<decltype(imports.member)>(name)
-    REGISTRY_IMPORT(current_user_path, "RtlFormatCurrentUserKeyPath");
-    REGISTRY_IMPORT(append_string, "RtlAppendUnicodeStringToString");
-    REGISTRY_IMPORT(free_string, "RtlFreeUnicodeString");
-    REGISTRY_IMPORT(append_text, "RtlAppendUnicodeToString");
-    REGISTRY_IMPORT(open_key, "NtOpenKey");
-    REGISTRY_IMPORT(initialize_string, "RtlInitUnicodeString");
-    REGISTRY_IMPORT(query_value, "NtQueryValueKey");
-    REGISTRY_IMPORT(close, "NtClose");
-#undef REGISTRY_IMPORT
-    return imports;
+const char* check_registry_settings(DWORD type, ConfigBytes& stream) {
+    if (type != REG_SZ && type != REG_BINARY && type != REG_NONE)
+        return "unexpected registry type";
+    const auto error = settings_header_error(stream);
+    if (error || type != REG_SZ)
+        return error;
+
+    // A string-typed value can hold a counted settings stream with embedded
+    // NULs. An odd-length stream can have a pad byte before its UTF-16 terminator.
+    std::span<const std::byte> records(stream);
+    constexpr std::size_t max_padding = 1 + sizeof(char16_t);
+    for (std::size_t padding = 0; padding <= max_padding; ++padding) {
+        if (valid_config_stream(records)) {
+            stream.resize(records.size());
+            return nullptr;
+        }
+        if (padding == max_padding || records.back() != std::byte{})
+            break;
+        records = records.first(records.size() - 1);
+    }
+    return "invalid settings record length";
+}
+#endif
+}
+std::optional<ConfigBytes> read_startup_registry_value(const char16_t* name) {
+    if (!name || !*name)
+        throw std::invalid_argument("Missing startup settings value name");
+#if defined(_WIN32)
+    static_assert(sizeof(wchar_t) == sizeof(char16_t));
+    const std::u16string_view value_name(name);
+    const std::string path = "HKCU\\Software\\" + std::string(value_name.begin(), value_name.end());
+    const auto exists = [&](LSTATUS status) {
+        if (status == ERROR_FILE_NOT_FOUND || status == ERROR_PATH_NOT_FOUND)
+            return false;
+        if (status != ERROR_SUCCESS)
+            throw std::runtime_error(path + " (Windows error " + std::to_string(status) + ")");
+        return true;
+    };
+    HKEY raw_key = nullptr;
+    if (!exists(RegOpenKeyExW(HKEY_CURRENT_USER, L"Software", 0, KEY_QUERY_VALUE, &raw_key)))
+        return std::nullopt;
+    const std::unique_ptr<std::remove_pointer_t<HKEY>, decltype(&RegCloseKey)> key(raw_key, RegCloseKey);
+    const auto* value = reinterpret_cast<const wchar_t*>(name);
+    for (;;) {
+        DWORD size = 0, type = REG_NONE;
+        if (!exists(RegQueryValueExW(key.get(), value, nullptr, &type, nullptr, &size)))
+            return std::nullopt;
+        ConfigBytes stream(size);
+        if (size) {
+            // Supply the stored byte count exactly. String termination must not
+            // overwrite the final byte of an odd-length binary settings record.
+            const auto status = RegQueryValueExW(key.get(), value, nullptr, &type,
+                                                 reinterpret_cast<BYTE*>(stream.data()), &size);
+            if (status == ERROR_MORE_DATA)
+                continue;
+            if (!exists(status))
+                return std::nullopt;
+            if (size != stream.size())
+                continue;
+        }
+        if (const auto error = check_registry_settings(type, stream))
+            throw std::runtime_error(path + " (type " + std::to_string(type) + ", " +
+                                     std::to_string(size) + " bytes): " + error);
+        return stream;
+    }
 #else
     throw std::runtime_error("Startup registry input requires Windows");
 #endif
-}
-std::optional<ConfigBytes> read_startup_registry_value(const char16_t* name,
-                                                       StartupRegistryImports imports,
-                                                       engine::JobMemory memory) {
-    if (!name || !imports.current_user_path || !imports.append_string || !imports.free_string ||
-        !imports.append_text || !imports.open_key || !imports.initialize_string ||
-        !imports.query_value || !imports.close || !memory.allocate || !memory.free ||
-        !memory.process_heap)
-        throw std::invalid_argument(
-            "Startup registry input requires complete native imports and process heap");
-    NativeConfigPath current{};
-    (void)imports.current_user_path(&current);
-    std::array<char16_t, 0x106> text;
-    NativeConfigPath path{0, 0x20C, text.data()};
-    // The supplied binary replaces its first status tests with unconditional
-    // branches. Preserve the observed supported path and ignored statuses.
-    (void)imports.append_string(&path, &current);
-    imports.free_string(&current);
-    (void)imports.append_text(&path, u"\\Software");
-    StartupRegistryObjectAttributes attributes{
-        sizeof(StartupRegistryObjectAttributes), nullptr, &path, 0x40, nullptr, nullptr};
-    void* key = nullptr;
-    (void)imports.open_key(&key, 0x20019, &attributes);
-    imports.initialize_string(&path, name);
-    std::uint32_t length = 0;
-    (void)imports.query_value(key, &path, 2, nullptr, 0, &length);
-    if (!length) {
-        (void)imports.close(key);
-        return std::nullopt;
-    }
-    auto* allocation = static_cast<std::byte*>(engine::allocate_owner_storage(memory, length));
-    // Native43490D97 skips its close-key block on allocation failure.
-    if (!allocation)
-        return std::nullopt;
-    const auto size = length;
-    const auto status = imports.query_value(key, &path, 2, allocation, length, &length);
-    if (status) {
-        engine::release_owner_storage(memory, allocation);
-        (void)imports.close(key);
-        return std::nullopt;
-    }
-    ConfigBytes result(allocation, allocation + size);
-    engine::release_owner_storage(memory, allocation);
-    (void)imports.close(key);
-    return result;
 }
 void unlink_startup_settings_records(SettingsPersistenceState& state) {
     auto* const owner = const_cast<std::byte*>(state.native_owner());
@@ -102,23 +108,12 @@ void unlink_startup_settings_records(SettingsPersistenceState& state) {
         unlink(*reinterpret_cast<ConfigLink*>(owner + offsets[index]));
 }
 std::array<bool, 10> restore_startup_settings_records(SettingsPersistenceState& state,
-                                                      std::span<const std::byte> information) {
-    const auto word = [](std::span<const std::byte> bytes, std::size_t offset) {
-        std::uint32_t value;
-        std::memcpy(&value, bytes.data() + offset, sizeof value);
-        return value;
-    };
-    if (information.size() < 12 || word(information, 4) != 3)
-        throw std::invalid_argument("Startup settings require a native REG_BINARY value");
-    const auto length = word(information, 8);
-    if (length > information.size() - 12 || length < 12)
-        throw std::invalid_argument("Startup settings registry payload has an invalid extent");
-    const auto stream = information.subspan(12, length);
-    if (word(stream, 0) != config_stream_magic)
-        throw std::invalid_argument("Startup settings stream has an invalid signature");
+                                                      std::span<const std::byte> stream) {
+    if (const auto error = settings_header_error(stream))
+        throw std::invalid_argument(error);
     state.startup_preset_hash = 0;
     if (const auto preset = find_config_record(stream, startup_preset_record))
-        state.startup_preset_hash = word(preset->value, 0);
+        std::memcpy(&state.startup_preset_hash, preset->value.data(), sizeof(state.startup_preset_hash));
     auto* const owner = const_cast<std::byte*>(state.native_owner());
     if (!owner)
         throw std::invalid_argument(
@@ -134,7 +129,4 @@ std::array<bool, 10> restore_startup_settings_records(SettingsPersistenceState& 
     }
     return records;
 }
-#if UINTPTR_MAX == UINT32_MAX
-static_assert(sizeof(StartupRegistryObjectAttributes) == 24);
-#endif
 } //namespace skeet::ui

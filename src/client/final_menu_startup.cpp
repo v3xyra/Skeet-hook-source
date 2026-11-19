@@ -78,10 +78,9 @@ FinalMenuStartupTail::FinalMenuStartupTail(ClientRuntimeStorage& storage,
                                            ui::MainMenuWindowOwner& window,
                                            misc::SettingsRuntimeOwner& settings,
                                            ConfigStorageOwner& configuration,
-                                           ui::StartupRenderer& renderer,
-                                           ui::StartupRegistryImports imports)
+                                           ui::StartupRenderer& renderer)
     : storage_(storage), window_(window), settings_(settings), configuration_(configuration),
-      renderer_(renderer), imports_(imports) {
+      renderer_(renderer) {
     if (&window.menu_data().data() != &storage.data() || &settings.storage() != &storage ||
         &settings.window() != &window || &settings.configuration() != &configuration ||
         &configuration.native_storage() != &storage.config_storage() ||
@@ -99,8 +98,7 @@ void FinalMenuStartupTail::initialize() {
             "Final menu startup requires the actual RootMenu and captured default layout");
     started_ = true;
     auto& persistent = storage_.config_storage().initialize_settings(storage_.memory());
-    const auto value = ui::read_startup_registry_value(window_.registry_name().text.data(),
-                                                       imports_, storage_.memory());
+    const auto value = ui::read_startup_registry_value(window_.registry_name().text.data());
     ui::unlink_startup_settings_records(persistent);
     RestoredSettings restored;
     if (value)
