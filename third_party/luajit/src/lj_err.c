@@ -249,6 +249,7 @@ extern void __DestructExceptionObject(EXCEPTION_RECORD *rec, int nothrow);
 
 #if LJ_TARGET_X86
 extern int skeet_lua_can_unwind_native_fault(unsigned code, unsigned flags);
+static char skeet_native_fault_marker;
 #endif
 
 /* Windows exception handler for interpreter frame. */
@@ -294,7 +295,8 @@ LJ_FUNCA int lj_err_unwind_win(EXCEPTION_RECORD *rec,
 #if LJ_TARGET_X86
       } else if (skeet_lua_can_unwind_native_fault(rec->ExceptionCode, rec->ExceptionFlags)) {
 	if (cframe_raw(cf2) != cf) return 1;
-	setstrV(L, L->top++, lj_str_newlit(L, "native access violation in Lua callback"));
+	setrawlightudV(L->top, &skeet_native_fault_marker);
+	incr_top(L);
 #endif
       } else if (!LJ_EXCODE_CHECK(rec->ExceptionCode)) {
 	/* Don't catch access violations etc. */

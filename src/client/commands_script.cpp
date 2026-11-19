@@ -1,5 +1,4 @@
 #include "skeet/client/commands.hpp"
-#include <cstring>
 
 namespace skeet::client {
 namespace {
@@ -17,8 +16,7 @@ int marshal_command(script::Bridge& bridge, void* context) {
     if (result == 0)
         return 1;
     if (const char* error = api.tolstring(state, -1, nullptr))
-        if (bridge.report_error &&
-            std::strcmp(error, "native access violation in Lua callback") != 0)
+        if (bridge.report_error)
             bridge.report_error(bridge.error_context, error);
     api.settop(state, -2);
     return -1;

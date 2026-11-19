@@ -33,6 +33,11 @@ bool convar_nonzero(const void* object) noexcept {
 std::int32_t sub(std::int32_t first, std::int32_t second) noexcept {
     return std::bit_cast<std::int32_t>(std::uint32_t(first) - std::uint32_t(second));
 }
+std::int32_t dt_hit_chance(const PreambleBindings& b) noexcept {
+    return b.settings.double_tap_hit_chance.value > 0
+               ? b.settings.double_tap_hit_chance.value
+               : b.weapon_settings.minimum_hit_chance.value;
+}
 std::uint32_t hash_command(const client::Command& command) noexcept {
     std::uint32_t result = 0x811C9DC5;
     for (const auto byte : std::as_bytes(std::span(&command, 1)))
@@ -90,8 +95,7 @@ PreambleScanTemplate prepare_template(const PreambleState& state, const client::
                             ? std::uint32_t(w.multipoint.value)
                             : 0;
     result.damage = w.minimum_damage.value;
-    result.chance = float((state.flags & 0x20U) ? b.settings.double_tap_hit_chance.value
-                                                : w.minimum_hit_chance.value) *
+    result.chance = float((state.flags & 0x20U) ? dt_hit_chance(b) : w.minimum_hit_chance.value) *
                     0.01f;
     result.minimum_cosine =
         b.trigonometry.cosine(float(w.maximum_fov.value) * 0.01745329238474369049f);
@@ -195,8 +199,8 @@ PreambleResult prepare_rage_command(PreambleState& state, client::CommandFrame& 
     state.flags = (original.flags & 0x8000000U) ? 0x20U : 0;
     if (original.flags & 0x4000U)
         state.flags |= 4;
-    else if ((state.flags & 0x20U) ? b.settings.double_tap_hit_chance.value > 0
-                                   : b.weapon_settings.minimum_hit_chance.value > 0)
+    else if (((state.flags & 0x20U) ? dt_hit_chance(b)
+                                    : b.weapon_settings.minimum_hit_chance.value) > 0)
         state.flags |= 0x10;
     if (original.flags & 8U)
         state.flags |= 0x200;

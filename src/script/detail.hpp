@@ -6,7 +6,6 @@
 #include <excpt.h>
 #include <csetjmp>
 #include <cstdio>
-#include <cstring>
 
 namespace skeet::script::detail {
 // Native frames mark Flags, retain Previous and place the saved Lua top after
@@ -161,15 +160,11 @@ template <class Function> bool protected_region(Function& function, CallbackFram
     std::longjmp(frame->checkpoint, 1);
 #endif
 }
-inline bool is_native_fault_marker(const char* message) noexcept {
-    return message && std::strcmp(message, "native access violation in Lua callback") == 0;
-}
 inline void report_lua_error(Bridge& bridge, void* state) {
     const auto& api = *bridge.api;
-    if (const auto error = api.tolstring(state, -1, nullptr)) {
-        if (bridge.report_error && !is_native_fault_marker(error))
+    if (const auto error = api.tolstring(state, -1, nullptr))
+        if (bridge.report_error)
             bridge.report_error(bridge.error_context, error);
-    }
     api.settop(state, -2);
 }
 inline void report_lua_error(Bridge& bridge) {
