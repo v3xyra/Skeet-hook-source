@@ -1,5 +1,5 @@
 #pragma once
-#include "skeet/network/exploit_recharge_receiver.hpp"
+#include "skeet/network/tick_shift_recharge_receiver.hpp"
 #include "skeet/prediction/observer_receiver.hpp"
 #include "command_frame.hpp"
 #include "skeet/prediction/history.hpp"
@@ -205,7 +205,7 @@ struct EntityCommandOwner {
     EntityCommandState& state;
     const EntityCommandBindings& bindings;
     network::NativeDataUpdateReceiver data_update_receiver{};
-    network::NativeExploitRechargeReceiver recharge_receiver{};
+    network::NativeTickShiftRechargeReceiver recharge_receiver{};
     prediction::NativePredictionObserverReceiver prediction_receiver{};
     // Constructed by the actual lifecycle owner, after its eight NativeTexts.
     // This source view never interprets native owner offsets as C++ members.

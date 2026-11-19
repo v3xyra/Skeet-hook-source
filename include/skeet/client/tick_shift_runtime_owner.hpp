@@ -5,8 +5,8 @@ namespace skeet::engine {
 class SceneQueryRuntimeOwner;
 }
 namespace skeet::network {
-struct ExploitCommandOwner;
-struct ExploitState;
+struct TickShiftCommandOwner;
+struct TickShiftState;
 }
 namespace skeet::script {
 class SourceScriptRuntimeOwner;
@@ -21,26 +21,26 @@ class LocalAnimationRuntimeOwner;
 class VisualRuntimeOwner;
 class NativeStartupSources;
 struct EngineRuntimeBindings;
-struct ExploitRuntimeFactoryBindings;
-// One network/tickbase state shared by all six concrete exploit endpoints.
+struct TickShiftRuntimeFactoryBindings;
+// One network/tickbase state shared by all six concrete tick-shift endpoints.
 // Construction composes live inputs only; the4347FF2F factory still allocates,
 // registers and initializes in the scheduler's recovered order.
-class ExploitRuntimeOwner final {
+class TickShiftRuntimeOwner final {
 public:
-    ExploitRuntimeOwner(ClientRuntimeStorage&, const EngineRuntimeBindings&,
+    TickShiftRuntimeOwner(ClientRuntimeStorage&, const EngineRuntimeBindings&,
                         ConfigurationRuntimeOwner&, HistoryRuntimeOwner&, MovementHudRuntimeOwner&,
                         CommandRuntimeOwner&, LocalAnimationRuntimeOwner&,
                         engine::SceneQueryRuntimeOwner&, VisualRuntimeOwner&,
                         script::SourceScriptRuntimeOwner&);
-    ~ExploitRuntimeOwner();
-    ExploitRuntimeOwner(const ExploitRuntimeOwner&) = delete;
-    ExploitRuntimeOwner& operator=(const ExploitRuntimeOwner&) = delete;
-    ExploitRuntimeOwner(ExploitRuntimeOwner&&) = delete;
-    ExploitRuntimeOwner& operator=(ExploitRuntimeOwner&&) = delete;
+    ~TickShiftRuntimeOwner();
+    TickShiftRuntimeOwner(const TickShiftRuntimeOwner&) = delete;
+    TickShiftRuntimeOwner& operator=(const TickShiftRuntimeOwner&) = delete;
+    TickShiftRuntimeOwner(TickShiftRuntimeOwner&&) = delete;
+    TickShiftRuntimeOwner& operator=(TickShiftRuntimeOwner&&) = delete;
     ClientRuntimeStorage& storage() const noexcept;
-    network::ExploitCommandOwner& command() noexcept;
-    network::ExploitState& state() noexcept;
-    ExploitRuntimeFactoryBindings& factory_bindings() noexcept;
+    network::TickShiftCommandOwner& command() noexcept;
+    network::TickShiftState& state() noexcept;
+    TickShiftRuntimeFactoryBindings& factory_bindings() noexcept;
     void bind_initializers(NativeStartupSources&);
 
 private:

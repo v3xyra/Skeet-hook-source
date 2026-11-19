@@ -8,7 +8,7 @@ struct SpreadStorageBindings;
 }
 namespace skeet::network {
 class DataUpdateObserverRegistry;
-class ExploitRechargeObserverRegistry;
+class TickShiftRechargeObserverRegistry;
 }
 namespace skeet::prediction {
 struct ObserverRegistry;
@@ -27,7 +27,7 @@ struct EntityObserverRegistry;
 struct StaticCleanupBindings {
     engine::NativeOwnerRegistryStorage& owner_registries;
     network::DataUpdateObserverRegistry& data_update_observers; //43475760/64/68
-    network::ExploitRechargeObserverRegistry& recharge_observers; //43475784/88/8C
+    network::TickShiftRechargeObserverRegistry& recharge_observers; //43475784/88/8C
     prediction::ObserverRegistry& prediction_observers; //43475AB0/B4/B8
     CommandEmptyTickRegistry& empty_tick_observers; //43475978/7C/80
     CommandPhaseRegistry& command_observers; //434757A0/A4/A8

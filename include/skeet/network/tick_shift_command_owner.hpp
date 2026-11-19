@@ -1,50 +1,50 @@
 #pragma once
-#include "exploit_runtime.hpp"
+#include "tick_shift_runtime.hpp"
 
 namespace skeet::network {
 
-struct ExploitPhaseState;
-struct ExploitPhase1Bindings;
-struct ExploitPhase7Bindings;
+struct TickShiftPhaseState;
+struct TickShiftPhase1Bindings;
+struct TickShiftPhase7Bindings;
 
 // Live source words used by43385D57/4340C3FA. Optional ack/sent pointers are
 // the actual pointer cells, so a later phase observes engine replacement.
-struct ExploitOwnerTiming {
+struct TickShiftOwnerTiming {
     const LatencySamples& latency;
     const std::int32_t& command_tick;
     const std::int32_t* const& acknowledged;
     const std::int32_t* const& sent;
 };
-struct ExploitCommandOwner {
-    ExploitRuntimeState& runtime;
-    const ExploitRuntimeSettings& settings;
-    ExploitRuntimeBindings& bindings;
+struct TickShiftCommandOwner {
+    TickShiftRuntimeState& runtime;
+    const TickShiftRuntimeSettings& settings;
+    TickShiftRuntimeBindings& bindings;
     std::uint32_t& command_flags; // shared434759C0
-    ExploitOwnerTiming timing;
-    ExploitPhaseState& phases;
-    ExploitPhase1Bindings& phase1;
-    ExploitPhase7Bindings& phase7;
+    TickShiftOwnerTiming timing;
+    TickShiftPhaseState& phases;
+    TickShiftPhase1Bindings& phase1;
+    TickShiftPhase7Bindings& phase7;
     std::int32_t weapon_command_12c = 0;
-    const ExploitControlView& controls;
+    const TickShiftControlView& controls;
 };
 
 // Complete primary434707D0 slot5. Ring ticks and history are preserved;
 // only their native command tags and the explicit sparse scalar fields reset.
-void reset_exploit_command_owner(ExploitCommandOwner&) noexcept; //4337D660
+void reset_tick_shift_command_owner(TickShiftCommandOwner&) noexcept; //4337D660
 
-void exploit_owner_phase1(ExploitCommandOwner&, void* player, void* weapon, client::Command&,
+void tick_shift_owner_phase1(TickShiftCommandOwner&, void* player, void* weapon, client::Command&,
                           std::uint8_t& send_packet); //433ABC86
 // Concrete433D6A11. The shared phase2 contract carries player/send/angles;
 // this native owner only consumes weapon and command on that phase.
-void exploit_owner_phase2(ExploitCommandOwner&, void* player, void* weapon, client::Command&,
+void tick_shift_owner_phase2(TickShiftCommandOwner&, void* player, void* weapon, client::Command&,
                           std::uint8_t& send_packet, std::array<float, 3>& incoming_angles);
-void exploit_owner_phase3(ExploitCommandOwner&, client::CommandFrame&, void* player,
+void tick_shift_owner_phase3(TickShiftCommandOwner&, client::CommandFrame&, void* player,
                           client::Command&, std::uint8_t& send_packet); //433B56ED
-void exploit_owner_phase4(ExploitCommandOwner&, client::CommandFrame&, void* player,
+void tick_shift_owner_phase4(TickShiftCommandOwner&, client::CommandFrame&, void* player,
                           client::Command&, std::uint8_t& send_packet); //433CE4BC
-void exploit_owner_phase5(ExploitCommandOwner&, client::CommandFrame&, void* player,
+void tick_shift_owner_phase5(TickShiftCommandOwner&, client::CommandFrame&, void* player,
                           client::Command&, std::uint8_t& send_packet); //4336663F
-void exploit_owner_phase7(ExploitCommandOwner&, client::CommandFrame&, void* player,
+void tick_shift_owner_phase7(TickShiftCommandOwner&, client::CommandFrame&, void* player,
                           client::Command&, std::uint8_t& send_packet); //43359E37
 
 } // namespace skeet::network

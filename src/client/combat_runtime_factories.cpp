@@ -1,7 +1,7 @@
 #include "skeet/client/combat_runtime_factories.hpp"
 #include "skeet/client/native_startup.hpp"
 #include "skeet/engine/owner_allocation.hpp"
-#include "skeet/network/exploit_phase7.hpp"
+#include "skeet/network/tick_shift_phase7.hpp"
 #include <algorithm>
 #include <array>
 #include <new>
@@ -27,10 +27,10 @@ void require_packet_state(const PacketRuntimeFactoryBindings& source) {
     require_unlinked(source.settings.variance);
     require_unlinked(source.settings.limit);
 }
-void require_exploit_state(const ExploitRuntimeFactoryBindings& source) {
+void require_tick_shift_state(const TickShiftRuntimeFactoryBindings& source) {
     const auto& command = source.owner.command;
     if (&command.controls != &command.settings.controls)
-        throw std::invalid_argument("Exploit factory must share its canonical runtime controls");
+        throw std::invalid_argument("Tick-shift factory must share its canonical runtime controls");
     const auto& config = command.controls.settings;
     for (const auto* descriptor : std::array<const ConfigDescriptor*, 8>{
              &config.on_shot_anti_aim, &config.on_shot_key, &config.double_tap_fake_lag_limit,
@@ -154,8 +154,8 @@ void zero_effects_values(EffectsRuntimeFactoryBindings& source) {
 void packet_entry(void* context) {
     create_packet_runtime_owner(*static_cast<CombatRuntimeFactoryBindings*>(context));
 }
-void exploit_entry(void* context) {
-    create_exploit_runtime_owner(*static_cast<CombatRuntimeFactoryBindings*>(context));
+void tick_shift_entry(void* context) {
+    create_tick_shift_runtime_owner(*static_cast<CombatRuntimeFactoryBindings*>(context));
 }
 void anti_aim_entry(void* context) {
     create_anti_aim_runtime_owner(*static_cast<CombatRuntimeFactoryBindings*>(context));
@@ -184,18 +184,18 @@ void* create_packet_runtime_owner(PacketRuntimeFactoryBindings& packet,
                                     packet.settings, packet.command);
     return storage;
 }
-void* create_exploit_runtime_owner(CombatRuntimeFactoryBindings& source) {
-    auto& exploit = source.exploit;
-    require_exploit_state(exploit);
+void* create_tick_shift_runtime_owner(CombatRuntimeFactoryBindings& source) {
+    auto& tick_shift = source.tick_shift;
+    require_tick_shift_state(tick_shift);
     auto* storage =
-        allocate(exploit.registries.primary.memory, network::native_exploit_owner_allocation_size,
-                 network::exploit_owner_size());
+        allocate(tick_shift.registries.primary.memory, network::native_tick_shift_owner_allocation_size,
+                 network::tick_shift_owner_size());
     // Native null edge4347FF44 is INT1/junk; no owner is registered or state
     // projected on that path. Allocation failure is explicit in the source.
     if (!storage)
         throw std::bad_alloc();
-    network::construct_allocated_exploit_owner(storage, exploit.registries, source.configuration,
-                                               exploit.owner);
+    network::construct_allocated_tick_shift_owner(storage, tick_shift.registries, source.configuration,
+                                               tick_shift.owner);
     return storage;
 }
 void* create_anti_aim_runtime_owner(CombatRuntimeFactoryBindings& source) {
@@ -276,15 +276,15 @@ void bind_combat_runtime_factories(NativeStartupSources& startup,
                 "Combat factories must share their native registry cells and heap");
     };
     auto& packet = source.packet;
-    auto& exploit = source.exploit;
+    auto& tick_shift = source.tick_shift;
     auto& aa = source.anti_aim;
     auto& effects = source.effects;
     auto& scripting = source.scripting;
     auto& modules = scripting.modules;
     registry(packet.lifecycle, 0x43475B78u);
-    registry(exploit.registries.primary, 0x43475B78u);
-    registry(exploit.registries.hud, 0x43475A9Cu);
-    registry(exploit.registries.messages, 0x43475B94u);
+    registry(tick_shift.registries.primary, 0x43475B78u);
+    registry(tick_shift.registries.hud, 0x43475A9Cu);
+    registry(tick_shift.registries.messages, 0x43475B94u);
     registry(aa.registries.primary, 0x43475B78u);
     registry(aa.registries.hud, 0x43475A9Cu);
     registry(aa.registries.frames, 0x43475AD8u);
@@ -298,16 +298,16 @@ void bind_combat_runtime_factories(NativeStartupSources& startup,
     registry(modules.frame_callbacks, 0x43475AD8u);
     registry(modules.update_callbacks, 0x43475988u);
     registry(modules.event_callbacks, 0x434758E0u);
-    if (&packet.commands.image() != &image || &exploit.registries.commands != &packet.commands ||
+    if (&packet.commands.image() != &image || &tick_shift.registries.commands != &packet.commands ||
         &aa.registries.commands != &packet.commands ||
         &effects.registries.commands != &packet.commands ||
         &modules.command_callbacks != &packet.commands ||
         &effects.registries.entities != &modules.entity_callbacks ||
         &effects.registries.entities.image() != &image ||
         &effects.registries.empty_ticks.image() != &image ||
-        &exploit.registries.data_updates.image() != &image ||
-        &exploit.registries.prediction.image() != &image ||
-        &modules.prediction_callbacks != &exploit.registries.prediction ||
+        &tick_shift.registries.data_updates.image() != &image ||
+        &tick_shift.registries.prediction.image() != &image ||
+        &modules.prediction_callbacks != &tick_shift.registries.prediction ||
         &modules.config.configuration != &source.configuration)
         throw std::invalid_argument(
             "Combat factories require shared typed registries and module configuration");
@@ -316,20 +316,20 @@ void bind_combat_runtime_factories(NativeStartupSources& startup,
         &scripting.owner.current_owner != &image.native_cell<script::ScriptOwner*>(0x43475B00u))
         throw std::invalid_argument("Combat factories require their canonical singleton cells");
     if (&packet.command.target != &aa.owner.command.globals.target ||
-        &exploit.owner.command.phase7.target != &packet.command.target ||
+        &tick_shift.owner.command.phase7.target != &packet.command.target ||
         &aa.owner.command.globals.scheduler_flags != &packet.commands.services().scheduler_flags ||
-        &exploit.owner.command.command_flags != &packet.commands.services().scheduler_flags ||
+        &tick_shift.owner.command.command_flags != &packet.commands.services().scheduler_flags ||
         &modules.command.scheduler_flags != &packet.commands.services().scheduler_flags ||
         &aa.owner.hud.scripts != &scripting.runtime.bridge ||
-        &exploit.owner.hud.scripts != &scripting.runtime.bridge)
+        &tick_shift.owner.hud.scripts != &scripting.runtime.bridge)
         throw std::invalid_argument(
-            "Combat commands must share targeting, scheduler flags, Lua bridge and exploit controls");
+            "Combat commands must share targeting, scheduler flags, Lua bridge and tick-shift controls");
     require_packet_state(packet);
-    require_exploit_state(exploit);
+    require_tick_shift_state(tick_shift);
     require_anti_aim_state(aa);
     require_effects_state(effects);
     startup.bind_initializer({packet_runtime_factory, &source, packet_entry});
-    startup.bind_initializer({exploit_runtime_factory, &source, exploit_entry});
+    startup.bind_initializer({tick_shift_runtime_factory, &source, tick_shift_entry});
     startup.bind_initializer({anti_aim_runtime_factory, &source, anti_aim_entry});
     startup.bind_initializer({effects_runtime_factory, &source, effects_entry});
     startup.bind_initializer({script_runtime_factory, &source, script_entry});

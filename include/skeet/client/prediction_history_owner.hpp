@@ -1,5 +1,5 @@
 #pragma once
-#include "skeet/network/exploit_recharge_receiver.hpp"
+#include "skeet/network/tick_shift_recharge_receiver.hpp"
 #include "skeet/prediction/observer_receiver.hpp"
 #include "command_frame.hpp"
 #include "restricted_player_command.hpp"
@@ -22,7 +22,7 @@ struct PredictionHistoryString {
 };
 std::span<const char* const, 22> prediction_history_sequence_strings() noexcept;
 // Canonical storage for the single434759B4 object. The bound arrays are those
-// consumed by RestrictedPlayerCommandOwner and exploit clones. Sequence
+// consumed by RestrictedPlayerCommandOwner and tick-shift clones. Sequence
 // consumers borrow the same22owned descriptors through typed accessors.
 class PredictionHistoryStorage {
     struct StandaloneBuffers;
@@ -48,12 +48,12 @@ public:
         return bool(standalone_);
     }
     void initialize_header(const std::int32_t*) noexcept;
-    void bind_snapshots(network::ExploitCommandSnapshot*, std::size_t count) noexcept;
+    void bind_snapshots(network::TickShiftCommandSnapshot*, std::size_t count) noexcept;
     void bind_prediction_records(RestrictedCommandPrediction0x4C*, std::size_t count) noexcept;
     void bind_sequence_string(std::size_t index, PredictionHistoryString) noexcept;
     const std::int32_t* field_34 = nullptr; // canonical leg_movement payload
     const std::int32_t* acknowledged_command = nullptr;
-    std::span<network::ExploitCommandSnapshot> snapshots;
+    std::span<network::TickShiftCommandSnapshot> snapshots;
     std::span<RestrictedCommandPrediction0x4C> prediction_records;
     std::array<PredictionHistoryString, 22> sequence_strings{};
     std::int32_t redirect_from_44 = 0, redirect_to_48 = 0;
@@ -85,7 +85,7 @@ struct PredictionHistoryOwner {
     // Non-owning source linkage, established by the actual lifecycle before
     // registration. This is the same canonical storage, not another history.
     PredictionHistoryStorage* canonical_storage = nullptr;
-    network::NativeExploitRechargeReceiver recharge_receiver{};
+    network::NativeTickShiftRechargeReceiver recharge_receiver{};
     NativeCommandEmptyTickReceiver empty_tick_receiver{};
     prediction::NativePredictionObserverReceiver prediction_receiver{};
 };
@@ -94,7 +94,7 @@ struct PredictionHistoryOwner {
 RestrictedPlayerCommandOwner* prediction_history_shared(PredictionHistoryOwner*) noexcept;
 const RestrictedPlayerCommandOwner*
 prediction_history_shared(const PredictionHistoryOwner*) noexcept;
-network::ExploitCommandSnapshot* prediction_history_snapshots(PredictionHistoryOwner*) noexcept;
+network::TickShiftCommandSnapshot* prediction_history_snapshots(PredictionHistoryOwner*) noexcept;
 // A nonnull published production owner has its lifecycle's storage linkage.
 PredictionHistoryStorage& prediction_history_storage(PredictionHistoryOwner&) noexcept;
 const PredictionHistoryStorage& prediction_history_storage(const PredictionHistoryOwner&) noexcept;

@@ -1,4 +1,4 @@
-#include "skeet/network/exploit_acknowledgement.hpp"
+#include "skeet/network/tick_shift_acknowledgement.hpp"
 #include "skeet/engine/interface_call.hpp"
 #include <bit>
 #include <cstring>
@@ -32,7 +32,7 @@ bool acknowledgement_enabled(const void* object) noexcept {
 long double current_engine_time(void* engine_client) {
     return engine::invoke<long double>(engine_client, 14);
 }
-std::int32_t receive_tick(const ExploitAcknowledgementBindings& bindings) {
+std::int32_t receive_tick(const TickShiftAcknowledgementBindings& bindings) {
     const auto time = current_engine_time(bindings.engine_client);
     const auto interval = field<float>(bindings.engine_globals, 0x20);
     // Native FDIV/FADD operate in ST0, then FSTP rounds once to float32
@@ -40,7 +40,7 @@ std::int32_t receive_tick(const ExploitAcknowledgementBindings& bindings) {
     volatile float rounded = static_cast<float>(time / static_cast<long double>(interval) + 0.5L);
     return _mm_cvttss_si32(_mm_set_ss(rounded));
 }
-std::int32_t process_ticks(const ExploitAcknowledgementBindings& bindings) noexcept {
+std::int32_t process_ticks(const TickShiftAcknowledgementBindings& bindings) noexcept {
     auto duration = _mm_cvtepi32_ps(_mm_cvtsi32_si128(bindings.process_milliseconds));
     duration = _mm_div_ss(duration, _mm_set_ss(1000.0f));
     duration = _mm_min_ss(_mm_max_ss(duration, _mm_setzero_ps()), _mm_set_ss(1.0f));
@@ -48,10 +48,10 @@ std::int32_t process_ticks(const ExploitAcknowledgementBindings& bindings) noexc
     return _mm_cvttss_si32(_mm_add_ss(duration, _mm_set_ss(0.5f)));
 }
 }
-void capture_exploit_acknowledgement(ExploitAcknowledgementOwner& owner, void* player) {
+void capture_tick_shift_acknowledgement(TickShiftAcknowledgementOwner& owner, void* player) {
     owner.captured_tick_base_118 = field<std::int32_t>(player, owner.bindings.tick_base_3d10b94c);
 }
-void finish_exploit_acknowledgement(ExploitAcknowledgementOwner& owner, void* player) {
+void finish_tick_shift_acknowledgement(TickShiftAcknowledgementOwner& owner, void* player) {
     auto& runtime = owner.runtime;
     auto& state = runtime.network;
     const auto& bindings = owner.bindings;

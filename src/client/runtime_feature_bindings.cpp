@@ -4,7 +4,7 @@
 #include "skeet/client/runtime_owner_initialization.hpp"
 #include "skeet/client/runtime_owner_bindings.hpp"
 #include "skeet/client/packet_runtime_owner.hpp"
-#include "skeet/client/exploit_runtime_owner.hpp"
+#include "skeet/client/tick_shift_runtime_owner.hpp"
 #include "skeet/client/misc_runtime_factories.hpp"
 #include "skeet/client/skin_runtime_factories.hpp"
 #include "skeet/client/movement_hud_factories.hpp"
@@ -36,10 +36,10 @@
 namespace skeet::client {
 namespace {
 ClientRuntimeStorage& checked(ClientRuntimeStorage& storage, PacketRuntimeOwner& packet,
-                              ExploitRuntimeOwner& exploit, anti_aim::RuntimeOwner& aa,
+                              TickShiftRuntimeOwner& tick_shift, anti_aim::RuntimeOwner& aa,
                               effects::EffectsRuntimeOwner& effects,
                               script::SourceScriptRuntimeOwner& scripts) {
-    if (&packet.storage() != &storage || &exploit.storage() != &storage ||
+    if (&packet.storage() != &storage || &tick_shift.storage() != &storage ||
         &aa.storage() != &storage || &effects.storage() != &storage ||
         &scripts.storage() != &storage)
         throw std::invalid_argument(
@@ -178,33 +178,33 @@ void require_graph(NativeStartupSources& sources, NativeStartupSourceGraph& g) {
 struct CombatRuntimeOwner::Data {
     ClientRuntimeStorage& storage;
     CombatRuntimeFactoryBindings factory;
-    Data(ClientRuntimeStorage& s, PacketRuntimeOwner& packet, ExploitRuntimeOwner& exploit,
+    Data(ClientRuntimeStorage& s, PacketRuntimeOwner& packet, TickShiftRuntimeOwner& tick_shift,
          anti_aim::RuntimeOwner& aa, effects::EffectsRuntimeOwner& effects,
          script::SourceScriptRuntimeOwner& scripts)
-        : storage(checked(s, packet, exploit, aa, effects, scripts)),
+        : storage(checked(s, packet, tick_shift, aa, effects, scripts)),
           factory{s.data_owner(),
                   s.owner_registries(),
                   s.configuration(),
                   packet.factory_bindings(),
-                  exploit.factory_bindings(),
+                  tick_shift.factory_bindings(),
                   aa.factory_bindings(),
                   effects.factory_bindings(),
                   scripts.factory_bindings()} {}
 };
 CombatRuntimeOwner::CombatRuntimeOwner(ClientRuntimeStorage& s, PacketRuntimeOwner& packet,
-                                       ExploitRuntimeOwner& exploit, anti_aim::RuntimeOwner& aa,
+                                       TickShiftRuntimeOwner& tick_shift, anti_aim::RuntimeOwner& aa,
                                        effects::EffectsRuntimeOwner& effects,
                                        script::SourceScriptRuntimeOwner& scripts)
-    : data_(std::make_unique<Data>(s, packet, exploit, aa, effects, scripts)) {}
+    : data_(std::make_unique<Data>(s, packet, tick_shift, aa, effects, scripts)) {}
 CombatRuntimeOwner::CombatRuntimeOwner(ClientRuntimeStorage& s, PacketRuntimeOwner& packet,
-                                       ExploitRuntimeOwner& exploit, anti_aim::RuntimeOwner& aa,
+                                       TickShiftRuntimeOwner& tick_shift, anti_aim::RuntimeOwner& aa,
                                        effects::EffectsRuntimeOwner& effects,
                                        script::SourceScriptRuntimeOwner& scripts,
                                        script::SourceScriptModuleInputs inputs) {
     if (&scripts.storage() != &s)
         throw std::invalid_argument("Combat Lua modules must share this process storage");
     scripts.bind_modules(inputs);
-    data_ = std::make_unique<Data>(s, packet, exploit, aa, effects, scripts);
+    data_ = std::make_unique<Data>(s, packet, tick_shift, aa, effects, scripts);
 }
 CombatRuntimeOwner::~CombatRuntimeOwner() = default;
 ClientRuntimeStorage& CombatRuntimeOwner::storage() const noexcept {

@@ -2,7 +2,7 @@
 #include "skeet/anti_aim/owner_lifecycle.hpp"
 #include "skeet/effects/owner_lifecycle.hpp"
 #include "skeet/engine/native_owner_registry_storage.hpp"
-#include "skeet/network/exploit_owner.hpp"
+#include "skeet/network/tick_shift_owner.hpp"
 #include "skeet/network/packet_owner.hpp"
 #include "skeet/script/owner.hpp"
 
@@ -15,9 +15,9 @@ struct PacketRuntimeFactoryBindings {
     anti_aim::FakeLagSettings& settings;
     network::PacketCommandOwner& command;
 };
-struct ExploitRuntimeFactoryBindings {
-    network::ExploitOwnerRegistries registries;
-    network::ExploitOwnerBindings owner;
+struct TickShiftRuntimeFactoryBindings {
+    network::TickShiftOwnerRegistries registries;
+    network::TickShiftOwnerBindings owner;
 };
 struct AntiAimRuntimeFactoryBindings {
     anti_aim::OwnerRegistries registries;
@@ -41,26 +41,26 @@ struct CombatRuntimeFactoryBindings {
     engine::NativeOwnerRegistryStorage& registries;
     ConfigRegistries& configuration;
     PacketRuntimeFactoryBindings packet;
-    ExploitRuntimeFactoryBindings exploit;
+    TickShiftRuntimeFactoryBindings tick_shift;
     AntiAimRuntimeFactoryBindings anti_aim;
     EffectsRuntimeFactoryBindings effects;
     ScriptRuntimeFactoryBindings scripting;
 };
 
 inline constexpr std::uint32_t packet_runtime_factory = 0x4347DA84u;
-inline constexpr std::uint32_t exploit_runtime_factory = 0x4347FF2Fu;
+inline constexpr std::uint32_t tick_shift_runtime_factory = 0x4347FF2Fu;
 inline constexpr std::uint32_t anti_aim_runtime_factory = 0x43485CCCu;
 inline constexpr std::uint32_t effects_runtime_factory = 0x43484F93u;
 inline constexpr std::uint32_t script_runtime_factory = 0x4348E608u;
 
 // These are source allocations: retain the native minimum and aligned heap
 // header while reserving room for additional typed source binding metadata.
-// Packet/exploit allocation failure reaches unresolved native INT1/junk; the
+// Packet and tick-shift allocation failure reaches unresolved native INT1/junk; the
 // source failure policy throws bad_alloc before construction or registration.
 // AA/effects/script preserve their actual null singleton publication branches.
 void* create_packet_runtime_owner(CombatRuntimeFactoryBindings&);
 void* create_packet_runtime_owner(PacketRuntimeFactoryBindings&, ConfigRegistries&);
-void* create_exploit_runtime_owner(CombatRuntimeFactoryBindings&);
+void* create_tick_shift_runtime_owner(CombatRuntimeFactoryBindings&);
 void* create_anti_aim_runtime_owner(CombatRuntimeFactoryBindings&);
 void* create_anti_aim_runtime_owner(AntiAimRuntimeFactoryBindings&, ConfigRegistries&);
 void* create_effects_runtime_owner(CombatRuntimeFactoryBindings&);

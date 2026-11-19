@@ -1,6 +1,6 @@
-#include "skeet/network/exploit_runtime.hpp"
-#include "skeet/network/exploit_controls.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_runtime.hpp"
+#include "skeet/network/tick_shift_controls.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/client/entity_command_owner.hpp"
 #include "skeet/client/prediction_history_owner.hpp"
 #include "skeet/engine/interface_call.hpp"
@@ -33,44 +33,44 @@ std::int32_t time_ticks(float time, float interval) noexcept {
     return _mm_cvttss_si32(
         _mm_add_ss(_mm_div_ss(_mm_set_ss(time), _mm_set_ss(interval)), _mm_set_ss(0.5f)));
 }
-std::int32_t process_ticks(const ExploitRuntimeSettings& settings, float interval) noexcept {
+std::int32_t process_ticks(const TickShiftRuntimeSettings& settings, float interval) noexcept {
     auto time =
         _mm_div_ss(_mm_cvtepi32_ps(_mm_cvtsi32_si128(settings.process_milliseconds_43468290)),
                    _mm_set_ss(1000.0f));
     time = _mm_min_ss(_mm_max_ss(time, _mm_setzero_ps()), _mm_set_ss(1.0f));
     return _mm_cvttss_si32(_mm_add_ss(_mm_div_ss(time, _mm_set_ss(interval)), _mm_set_ss(0.5f)));
 }
-std::int32_t available_commands(const ExploitState& state, std::int32_t choked) noexcept {
+std::int32_t available_commands(const TickShiftState& state, std::int32_t choked) noexcept {
     auto available = (std::min)(sub(sub(state.budget, choked), 1), state.available);
     for (std::int32_t i = 0; i < state.history_count; ++i)
         available =
             (std::min)(available, state.history[(state.history_first + std::uint32_t(i)) & 7U]);
     return available;
 }
-std::int32_t history_available(const ExploitState& state) noexcept {
+std::int32_t history_available(const TickShiftState& state) noexcept {
     auto available = state.available;
     for (std::int32_t i = 0; i < state.history_count; ++i)
         available =
             (std::min)(available, state.history[(state.history_first + std::uint32_t(i)) & 7U]);
     return available;
 }
-bool classified_weapon(const ExploitRuntimeBindings& bindings, void* weapon) noexcept {
+bool classified_weapon(const TickShiftRuntimeBindings& bindings, void* weapon) noexcept {
     return weapon && classified_packet_weapon(
                          field<std::uint16_t>(weapon, bindings.firing.offsets.weapon_definition),
                          bindings.weapon_classification);
 }
-bool shot_window(const ExploitState& state, const ExploitRuntimeBindings& bindings) noexcept {
+bool shot_window(const TickShiftState& state, const TickShiftRuntimeBindings& bindings) noexcept {
     const auto now = time_ticks(*bindings.current_time, *bindings.tick_interval);
     return add(now, 2) <= state.shot_tick && sub(state.shot_tick, now) < 16;
 }
-void flush(ExploitRuntimeState& runtime, const client::Command& command,
+void flush(TickShiftRuntimeState& runtime, const client::Command& command,
            std::uint32_t& flags) noexcept {
     runtime.network.flags &= ~0x12U;
     runtime.last_flush_command_134 = command.number;
     force_send(flags);
 }
-void select_mode(ExploitState& state, void* player, const ExploitRuntimeSettings& settings,
-                 const ExploitRuntimeBindings& bindings, const std::uint32_t& command_flags) {
+void select_mode(TickShiftState& state, void* player, const TickShiftRuntimeSettings& settings,
+                 const TickShiftRuntimeBindings& bindings, const std::uint32_t& command_flags) {
     void* rules = bindings.game_rules ? *bindings.game_rules : nullptr;
     const auto& offsets = bindings.offsets;
     const bool rule0 = rules && field<std::uint8_t>(rules, offsets.rule_bf567619);
@@ -91,29 +91,29 @@ void select_mode(ExploitState& state, void* player, const ExploitRuntimeSettings
     if (field<std::uint8_t>(player, offsets.player_block_9d920e35))
         return;
     if ((command_flags & 0x40U) ||
-        hotkey_active(settings.command_block, exploit_control_keys(settings)) ||
+        hotkey_active(settings.command_block, tick_shift_control_keys(settings)) ||
         (command_flags & 0x100U))
         return;
-    if (exploit_control_active(settings, ExploitControl::fake_peek))
+    if (tick_shift_control_active(settings, TickShiftControl::fake_peek))
         state.mode = 3;
-    else if (exploit_control_active(settings, ExploitControl::double_tap))
+    else if (tick_shift_control_active(settings, TickShiftControl::double_tap))
         state.mode = 1;
-    else if (exploit_control_active(settings, ExploitControl::on_shot))
+    else if (tick_shift_control_active(settings, TickShiftControl::on_shot))
         state.mode = 2;
     else
         return;
-    state.minimum = (std::max)(1, exploit_fake_lag_setting(settings));
-    state.limit = std::clamp(sub(sub(state.budget, exploit_fake_lag_setting(settings)), 1), 1, 15);
+    state.minimum = (std::max)(1, tick_shift_fake_lag_setting(settings));
+    state.limit = std::clamp(sub(sub(state.budget, tick_shift_fake_lag_setting(settings)), 1), 1, 15);
     if (state.mode == 2)
         state.flags &= ~1U;
 }
-void copy_snapshot(ExploitRuntimeBindings& bindings, std::uint32_t previous, std::uint32_t next) {
+void copy_snapshot(TickShiftRuntimeBindings& bindings, std::uint32_t previous, std::uint32_t next) {
     //433671B7 reads the owner after the checksum callback on each clone.
     if (auto* const owner = bindings.prediction_snapshots_owner)
         client::copy_prediction_snapshot(*owner, std::bit_cast<std::int32_t>(previous),
                                          std::bit_cast<std::int32_t>(next));
 }
-void adjust_prediction_history(ExploitRuntimeBindings& bindings,
+void adjust_prediction_history(TickShiftRuntimeBindings& bindings,
                                client::EntityCommandOwner* stamp_owner, std::int32_t command,
                                std::int32_t tick) {
     if (stamp_owner)
@@ -144,9 +144,9 @@ void adjust_prediction_history(ExploitRuntimeBindings& bindings,
     store<std::int32_t>(bindings.prediction, 0x1C, 0);
     store<std::int32_t>(bindings.prediction, 0x24, 1);
 }
-void transition(ExploitRuntimeState& runtime, client::CommandFrame& frame, void* player,
+void transition(TickShiftRuntimeState& runtime, client::CommandFrame& frame, void* player,
                 client::Command& command, bool shifting, std::int32_t pending,
-                const ExploitRuntimeSettings& settings, ExploitRuntimeBindings& bindings) {
+                const TickShiftRuntimeSettings& settings, TickShiftRuntimeBindings& bindings) {
     auto& state = runtime.network;
     const auto latency = average_latency_ticks(bindings.timing.latency);
     const auto adjusted = adjusted_command_tick(
@@ -194,18 +194,18 @@ void transition(ExploitRuntimeState& runtime, client::CommandFrame& frame, void*
 }
 }
 
-void process_exploit_runtime(ExploitRuntimeState& runtime, client::CommandFrame& frame,
+void process_tick_shift_runtime(TickShiftRuntimeState& runtime, client::CommandFrame& frame,
                              void* player, void* weapon, client::Command& command,
-                             std::uint8_t& send_packet, const ExploitRuntimeSettings& settings,
-                             ExploitRuntimeBindings& bindings, std::uint32_t& flags) {
+                             std::uint8_t& send_packet, const TickShiftRuntimeSettings& settings,
+                             TickShiftRuntimeBindings& bindings, std::uint32_t& flags) {
     auto& state = runtime.network;
     const bool previous_shift = state.last_command == *bindings.last_outgoing;
-    auto pending = pending_exploit_commands(state, *bindings.choked_commands);
+    auto pending = pending_tick_shift_commands(state, *bindings.choked_commands);
     select_mode(state, player, settings, bindings, flags);
     bool shifting = false;
     if (state.mode == 0) {
         if (state.available > 0) {
-            state.minimum = (std::max)(1, exploit_fake_lag_setting(settings));
+            state.minimum = (std::max)(1, tick_shift_fake_lag_setting(settings));
             state.flags |= 9U;
             shifting = true;
         }
@@ -243,7 +243,7 @@ void process_exploit_runtime(ExploitRuntimeState& runtime, client::CommandFrame&
             (move.forward_move * move.forward_move + move.side_move * move.side_move) +
             move.up_move * move.up_move;
         if (state.mode == 1 && state.available >= state.limit &&
-            exploit_double_tap_setting(settings) == 1 &&
+            tick_shift_double_tap_setting(settings) == 1 &&
             (classified_weapon(bindings, weapon) || frame.weapon_kind_124 == 9 ||
              frame.weapon_kind_124 == 0) &&
             frame.weapon_id_d8 != 64 && !previous_low_health && health_steps < 6 &&
@@ -278,7 +278,7 @@ void process_exploit_runtime(ExploitRuntimeState& runtime, client::CommandFrame&
                             state.flags = (state.flags & ~1U) | 8U;
                             force_send(flags);
                         } else if ((frame.weapon_id_d8 == 64 && (command.movement.buttons & 1U)) ||
-                                   (exploit_double_tap_setting(settings) == 1 &&
+                                   (tick_shift_double_tap_setting(settings) == 1 &&
                                     shot_window(state, bindings))) {
                             state.flags = (state.flags & ~1U) | 8U;
                             send_packet = 1;
@@ -288,7 +288,7 @@ void process_exploit_runtime(ExploitRuntimeState& runtime, client::CommandFrame&
                     state.timer_124 = 0.75f;
                 }
             }
-            if (state.available >= state.limit && exploit_double_tap_setting(settings) == 1 &&
+            if (state.available >= state.limit && tick_shift_double_tap_setting(settings) == 1 &&
                 frame.weapon_id_d8 != 64 && (state.flags & 8U) && (flags & 0x20000U) &&
                 shot_window(state, bindings)) {
                 state.flags &= ~1U;

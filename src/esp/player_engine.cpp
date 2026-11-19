@@ -208,7 +208,9 @@ std::int32_t EnginePlayers::kind(const RuntimeWeapon& w) const {
 bool EnginePlayers::player_info(std::int32_t index, std::string_view& name) {
     if (!engine::invoke<bool>(bindings_.engine_client, 8, index, player_info_.data()))
         return false;
-    name = {reinterpret_cast<const char*>(player_info_.data() + 0x10), 20};
+    name = {reinterpret_cast<const char*>(player_info_.data() + 0x10),
+            hud::ObserverPlayerInfo{}.name.size()};
+    name = name.substr(0, name.find('\0'));
     return true;
 }
 bool EnginePlayers::player_info(std::int32_t index, hud::ObserverPlayerInfo& output) {

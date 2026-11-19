@@ -88,12 +88,12 @@ struct LiveRageHudBinding { //43472C54 ->4337F589, actual incoming local entity
     const esp::HitboxHighlightEngineContext& highlight_context;
     void draw(ui::RenderQueue&, void*, std::int32_t&) const;
 };
-struct ExploitHudBinding { //43472688 ->433E1B2F
+struct TickShiftHudBinding { //43472688 ->433E1B2F
     script::Bridge& scripts;
-    network::ExploitState& state;
+    network::TickShiftState& state;
     float& shared_timer;
     const IntegerConfig& indicators;
-    const ExploitIndicatorBindings& interfaces;
+    const TickShiftIndicatorBindings& interfaces;
     const float& frame_time;
     const esp::IndicatorLayout& layout;
     void draw(ui::RenderQueue&, void*, std::int32_t&) const;
@@ -174,7 +174,7 @@ using FreestandingHudHandler = ConcreteHudHandler<FreestandingHudBinding>;
 using PingHudHandler = ConcreteHudHandler<PingHudBinding>;
 using RageHudHandler = ConcreteHudHandler<RageHudBinding>;
 using LiveRageHudHandler = ConcreteHudHandler<LiveRageHudBinding>;
-using ExploitHudHandler = ConcreteHudHandler<ExploitHudBinding>;
+using TickShiftHudHandler = ConcreteHudHandler<TickShiftHudBinding>;
 using MovementHudHandler = ConcreteHudHandler<MovementHudBinding>;
 using CrosshairHudHandler = ConcreteHudHandler<CrosshairHudBinding>;
 using PenetrationHudHandler = ConcreteHudHandler<PenetrationHudBinding>;

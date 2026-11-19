@@ -50,7 +50,7 @@ public:
     std::uint8_t& fix_animations; //4346A527
     std::uint8_t& faster_grenade_toss; //43467560
 
-    // Menu, persistence, prediction and exploit bindings borrow these cells.
+    // Menu, persistence, prediction and tick-shift bindings borrow these cells.
     // GuiDpiState must likewise be constructed from dpi_scale, not a copy.
     SettingsMenuValues values() noexcept;
 };

@@ -1,4 +1,4 @@
-#include "skeet/client/exploit_runtime_owner.hpp"
+#include "skeet/client/tick_shift_runtime_owner.hpp"
 #include "skeet/client/combat_runtime_factories.hpp"
 #include "skeet/client/command_capture_runtime_owner.hpp"
 #include "skeet/client/command_checksum.hpp"
@@ -15,8 +15,8 @@
 #include "skeet/engine/decoded_offset.hpp"
 #include "skeet/engine/netvar_initialization.hpp"
 #include "skeet/engine/scene_runtime_owner.hpp"
-#include "skeet/network/exploit_phase1.hpp"
-#include "skeet/network/exploit_phase7.hpp"
+#include "skeet/network/tick_shift_phase1.hpp"
+#include "skeet/network/tick_shift_phase7.hpp"
 #include "skeet/movement/command_wrapper.hpp"
 #include "skeet/movement/rage_stop.hpp"
 #include "skeet/script/source_runtime_owner.hpp"
@@ -33,7 +33,7 @@ std::ptrdiff_t offset(ClientRuntimeStorage& s, std::uint32_t identity) {
     for (const auto& row : engine::build_data_map_offset_recipes())
         if (row.pointer_identity == identity)
             return engine::DecodedOffset(g, identity, row.xor_key_identity, row.initial_xor_key, 0);
-    throw std::invalid_argument("Exploit field has no recovered receive/datamap recipe");
+    throw std::invalid_argument("Tick-shift field has no recovered receive/datamap recipe");
 }
 ClientRuntimeStorage& checked(ClientRuntimeStorage& s, const EngineRuntimeBindings& e,
                               ConfigurationRuntimeOwner& c, HistoryRuntimeOwner& h,
@@ -46,18 +46,18 @@ ClientRuntimeStorage& checked(ClientRuntimeStorage& s, const EngineRuntimeBindin
         &local.storage() != &s || &local.history() != &h || &scene.storage() != &s ||
         &scene.players() != &h.players() || &visual.storage() != &s || &scripts.storage() != &s)
         throw std::invalid_argument(
-            "Exploit requires canonical command, history, movement, local-animation, scene, HUD and Lua owners");
+            "Tick shifting requires canonical command, history, movement, local-animation, scene, HUD and Lua owners");
     auto& data = s.data();
     if (!e.command.seed_generator || !e.command.random_seed ||
         e.command.seed_generator != data.native_cell<prediction::SeedGenerator>(0x434679ACu) ||
         e.command.random_seed != data.native_cell<std::int32_t*>(0x43468328u))
-        throw std::invalid_argument("Exploit requires the acquired genuine command seed inputs");
+        throw std::invalid_argument("Tick shifting requires the acquired genuine command seed inputs");
     for (const auto identity : {0x434757DCu, 0x43475B2Cu, 0x43475BA4u, 0x4346A338u, 0x43467EB8u,
                                 0x4346A334u, 0x43475A60u, 0x4346A894u, 0x43469264u})
         if (!data.native_cell<void*>(identity))
-            throw std::invalid_argument("Exploit command/clock producer is missing");
+            throw std::invalid_argument("Tick-shift command/clock producer is missing");
     if (!e.variables.at(0x4346A850u).get())
-        throw std::invalid_argument("Exploit acknowledgement ConVar is not acquired");
+        throw std::invalid_argument("Tick-shift acknowledgement ConVar is not acquired");
     initialize_source_command_checksum(data);
     return s;
 }
@@ -65,34 +65,34 @@ engine::OwnerRegistryBinding registry(ClientRuntimeStorage& storage, std::uint32
     return {storage.owner_registries().at(identity), storage.memory()};
 }
 }
-struct ExploitRuntimeOwner::Data {
+struct TickShiftRuntimeOwner::Data {
     ClientRuntimeStorage& storage;
     InputBitmap input;
-    network::ExploitState state{};
-    network::ExploitRuntimeState runtime;
-    network::ExploitPhaseState phases{};
-    network::ExploitControlView controls;
-    network::ExploitRuntimeSettings settings;
+    network::TickShiftState state{};
+    network::TickShiftRuntimeState runtime;
+    network::TickShiftPhaseState phases{};
+    network::TickShiftControlView controls;
+    network::TickShiftRuntimeSettings settings;
     rage::TargetBindings targeting;
     GeneratedCommandOwnersBindings generated;
     RageStopBindings stopping;
-    network::ExploitRuntimeBindings live;
-    network::ExploitPhase1Bindings first;
-    network::ExploitPhase7Bindings last;
-    network::ExploitCommandOwner command;
-    network::ExploitAcknowledgementBindings acknowledgement;
-    network::ExploitMessageBindings messages;
-    hud::ExploitIndicatorBindings indicator;
-    network::ExploitOwnerHudBindings hud;
-    ExploitRuntimeFactoryBindings factory;
+    network::TickShiftRuntimeBindings live;
+    network::TickShiftPhase1Bindings first;
+    network::TickShiftPhase7Bindings last;
+    network::TickShiftCommandOwner command;
+    network::TickShiftAcknowledgementBindings acknowledgement;
+    network::TickShiftMessageBindings messages;
+    hud::TickShiftIndicatorBindings indicator;
+    network::TickShiftOwnerHudBindings hud;
+    TickShiftRuntimeFactoryBindings factory;
     static void initialize(void* raw) {
         auto& self = *static_cast<Data*>(raw);
-        auto* allocation = network::allocate_exploit_owner_storage(self.storage.memory());
+        auto* allocation = network::allocate_tick_shift_owner_storage(self.storage.memory());
         //4347FF44 reaches unresolved INT1/junk. This explicit source failure
         //policy neither constructs nor registers an invented null owner.
         if (!allocation)
             throw std::bad_alloc();
-        network::construct_allocated_exploit_owner(
+        network::construct_allocated_tick_shift_owner(
             allocation, self.factory.registries, self.storage.configuration(), self.factory.owner);
     }
     Data(ClientRuntimeStorage& s, const EngineRuntimeBindings& e, ConfigurationRuntimeOwner& c,
@@ -101,7 +101,7 @@ struct ExploitRuntimeOwner::Data {
          VisualRuntimeOwner& visual, script::SourceScriptRuntimeOwner& scripts)
         : storage(checked(s, e, c, h, m, core, local, scene, visual, scripts)),
           input(s.input_runtime().bitmap()), runtime{state, 0, 0, 0, 0, 0, {}, {}, {}},
-          controls{c.rage_settings().exploits, input},
+          controls{c.rage_settings().tick_shift, input},
           settings{controls,
                    c.rage_settings().global.duck_peek_assist.value.binding,
                    s.data().native_cell<std::uint8_t>(0x43467560u),
@@ -224,7 +224,7 @@ struct ExploitRuntimeOwner::Data {
                    s.command_phases(), s.data_update_observers(), s.prediction_observers()},
                   {command, acknowledgement, messages, hud}} {}
 };
-ExploitRuntimeOwner::ExploitRuntimeOwner(ClientRuntimeStorage& s, const EngineRuntimeBindings& e,
+TickShiftRuntimeOwner::TickShiftRuntimeOwner(ClientRuntimeStorage& s, const EngineRuntimeBindings& e,
                                          ConfigurationRuntimeOwner& c, HistoryRuntimeOwner& h,
                                          MovementHudRuntimeOwner& m, CommandRuntimeOwner& core,
                                          LocalAnimationRuntimeOwner& local,
@@ -232,22 +232,22 @@ ExploitRuntimeOwner::ExploitRuntimeOwner(ClientRuntimeStorage& s, const EngineRu
                                          VisualRuntimeOwner& visual,
                                          script::SourceScriptRuntimeOwner& scripts)
     : data_(std::make_unique<Data>(s, e, c, h, m, core, local, scene, visual, scripts)) {}
-ExploitRuntimeOwner::~ExploitRuntimeOwner() = default;
-ClientRuntimeStorage& ExploitRuntimeOwner::storage() const noexcept {
+TickShiftRuntimeOwner::~TickShiftRuntimeOwner() = default;
+ClientRuntimeStorage& TickShiftRuntimeOwner::storage() const noexcept {
     return data_->storage;
 }
-network::ExploitCommandOwner& ExploitRuntimeOwner::command() noexcept {
+network::TickShiftCommandOwner& TickShiftRuntimeOwner::command() noexcept {
     return data_->command;
 }
-network::ExploitState& ExploitRuntimeOwner::state() noexcept {
+network::TickShiftState& TickShiftRuntimeOwner::state() noexcept {
     return data_->state;
 }
-ExploitRuntimeFactoryBindings& ExploitRuntimeOwner::factory_bindings() noexcept {
+TickShiftRuntimeFactoryBindings& TickShiftRuntimeOwner::factory_bindings() noexcept {
     return data_->factory;
 }
-void ExploitRuntimeOwner::bind_initializers(NativeStartupSources& sources) {
+void TickShiftRuntimeOwner::bind_initializers(NativeStartupSources& sources) {
     if (&sources.data() != &storage().data())
-        throw std::invalid_argument("Exploit factory requires the canonical startup dispatcher");
-    sources.bind_initializer({exploit_runtime_factory, data_.get(), Data::initialize});
+        throw std::invalid_argument("Tick-shift factory requires the canonical startup dispatcher");
+    sources.bind_initializer({tick_shift_runtime_factory, data_.get(), Data::initialize});
 }
 } //namespace skeet::client

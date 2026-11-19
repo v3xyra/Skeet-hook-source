@@ -1,4 +1,4 @@
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/client/entity_command_owner.hpp"
 #include "skeet/client/prediction_history_owner.hpp"
 #include "skeet/misc/viewmodel_lag.hpp"
@@ -8,39 +8,39 @@
 #include <stdexcept>
 
 #if defined(_M_IX86) || defined(__i386__)
-#define EXPLOIT_RECHARGE_FAST __fastcall
-#define EXPLOIT_RECHARGE_MEMBER __thiscall
+#define TICK_SHIFT_RECHARGE_FAST __fastcall
+#define TICK_SHIFT_RECHARGE_MEMBER __thiscall
 #else
-#define EXPLOIT_RECHARGE_FAST
-#define EXPLOIT_RECHARGE_MEMBER
+#define TICK_SHIFT_RECHARGE_FAST
+#define TICK_SHIFT_RECHARGE_MEMBER
 #endif
 
 namespace skeet::network {
 namespace {
-void EXPLOIT_RECHARGE_FAST empty_generated(NativeExploitRechargeReceiver*, void*, std::int32_t,
+void TICK_SHIFT_RECHARGE_FAST empty_generated(NativeTickShiftRechargeReceiver*, void*, std::int32_t,
                                            std::int32_t) {} //4334A269
-void EXPLOIT_RECHARGE_FAST empty_recharge(NativeExploitRechargeReceiver*, void*, std::int32_t) {
+void TICK_SHIFT_RECHARGE_FAST empty_recharge(NativeTickShiftRechargeReceiver*, void*, std::int32_t) {
 } //433C95B7
-void EXPLOIT_RECHARGE_MEMBER empty_cloned(NativeExploitRechargeReceiver*, void*, client::Command*) {
+void TICK_SHIFT_RECHARGE_MEMBER empty_cloned(NativeTickShiftRechargeReceiver*, void*, client::Command*) {
 } //4334A269
-void EXPLOIT_RECHARGE_FAST recharge_prediction(NativeExploitRechargeReceiver* receiver, void*,
+void TICK_SHIFT_RECHARGE_FAST recharge_prediction(NativeTickShiftRechargeReceiver* receiver, void*,
                                                std::int32_t number) {
     client::clone_previous_prediction_snapshot(
         *static_cast<client::PredictionHistoryOwner*>(receiver->source), number);
 }
-void EXPLOIT_RECHARGE_FAST recharge_entity_commands(NativeExploitRechargeReceiver* receiver, void*,
+void TICK_SHIFT_RECHARGE_FAST recharge_entity_commands(NativeTickShiftRechargeReceiver* receiver, void*,
                                                     std::int32_t number) {
     client::observe_entity_command_recharge(
         *static_cast<client::EntityCommandOwner*>(receiver->source), number);
 }
-void EXPLOIT_RECHARGE_FAST recharge_viewmodel(NativeExploitRechargeReceiver* receiver, void*,
+void TICK_SHIFT_RECHARGE_FAST recharge_viewmodel(NativeTickShiftRechargeReceiver* receiver, void*,
                                               std::int32_t) {
-    auto& owner = *static_cast<ExploitViewmodelRecharge*>(receiver->source);
+    auto& owner = *static_cast<TickShiftViewmodelRecharge*>(receiver->source);
     misc::advance_viewmodel_prediction(owner.state, owner.bindings);
 }
-void EXPLOIT_RECHARGE_FAST generated_feedback(NativeExploitRechargeReceiver* receiver, void*,
+void TICK_SHIFT_RECHARGE_FAST generated_feedback(NativeTickShiftRechargeReceiver* receiver, void*,
                                               std::int32_t final_command, std::int32_t) {
-    auto& owner = *static_cast<ExploitShotFeedbackObserver*>(receiver->source);
+    auto& owner = *static_cast<TickShiftShotFeedbackObserver*>(receiver->source);
     // Complete433C86CE: word1 is retained; only mutable word3 changes.
     for (auto& record : owner.state.pending) {
         const auto command = std::bit_cast<std::int32_t>(record.words[1]);
@@ -48,23 +48,23 @@ void EXPLOIT_RECHARGE_FAST generated_feedback(NativeExploitRechargeReceiver* rec
             record.words[3] = std::uint32_t(final_command);
     }
 }
-void EXPLOIT_RECHARGE_FAST generated_viewmodel(NativeExploitRechargeReceiver* receiver, void*,
+void TICK_SHIFT_RECHARGE_FAST generated_viewmodel(NativeTickShiftRechargeReceiver* receiver, void*,
                                                std::int32_t final_command, std::int32_t count) {
-    auto& owner = *static_cast<ExploitViewmodelRecharge*>(receiver->source);
+    auto& owner = *static_cast<TickShiftViewmodelRecharge*>(receiver->source);
     misc::record_viewmodel_command_range(owner.state, owner.bindings, final_command, count);
 }
-const NativeExploitRechargeVtable prediction_entries{empty_generated, recharge_prediction,
+const NativeTickShiftRechargeVtable prediction_entries{empty_generated, recharge_prediction,
                                                      empty_cloned};
-const NativeExploitRechargeVtable noop_entries{empty_generated, empty_recharge, empty_cloned};
-const NativeExploitRechargeVtable feedback_entries{generated_feedback, empty_recharge,
+const NativeTickShiftRechargeVtable noop_entries{empty_generated, empty_recharge, empty_cloned};
+const NativeTickShiftRechargeVtable feedback_entries{generated_feedback, empty_recharge,
                                                    empty_cloned};
-const NativeExploitRechargeVtable entity_entries{empty_generated, recharge_entity_commands,
+const NativeTickShiftRechargeVtable entity_entries{empty_generated, recharge_entity_commands,
                                                  empty_cloned};
-const NativeExploitRechargeVtable viewmodel_entries{generated_viewmodel, recharge_viewmodel,
+const NativeTickShiftRechargeVtable viewmodel_entries{generated_viewmodel, recharge_viewmodel,
                                                     empty_cloned};
 
-NativeExploitRechargeReceiver& source_receiver(void* endpoint) {
-    auto* receiver = static_cast<NativeExploitRechargeReceiver*>(endpoint);
+NativeTickShiftRechargeReceiver& source_receiver(void* endpoint) {
+    auto* receiver = static_cast<NativeTickShiftRechargeReceiver*>(endpoint);
     if (!receiver ||
         (receiver->vtable != &prediction_entries && receiver->vtable != &noop_entries &&
          receiver->vtable != &feedback_entries && receiver->vtable != &entity_entries &&
@@ -73,10 +73,10 @@ NativeExploitRechargeReceiver& source_receiver(void* endpoint) {
     return *receiver;
 }
 }
-ExploitRechargeObserverRegistry::ExploitRechargeObserverRegistry(
+TickShiftRechargeObserverRegistry::TickShiftRechargeObserverRegistry(
     engine::PreservedInitialization& initialization, engine::JobMemory memory)
-    : ExploitRechargeObserverRegistry(initialization.image_owner(), memory) {}
-ExploitRechargeObserverRegistry::ExploitRechargeObserverRegistry(
+    : TickShiftRechargeObserverRegistry(initialization.image_owner(), memory) {}
+TickShiftRechargeObserverRegistry::TickShiftRechargeObserverRegistry(
     std::shared_ptr<engine::NativeDataImage> image, engine::JobMemory memory)
     : image_(image),
       owners_(engine::require_native_data_image(image_).native_cell<engine::OwnerRegistry>(
@@ -85,46 +85,46 @@ ExploitRechargeObserverRegistry::ExploitRechargeObserverRegistry(
     if (!memory_.allocate || !memory_.free || !memory_.process_heap)
         throw std::invalid_argument("Native recharge storage requires the canonical process heap");
 }
-void ExploitRechargeObserverRegistry::append_receiver(NativeExploitRechargeReceiver& receiver,
+void TickShiftRechargeObserverRegistry::append_receiver(NativeTickShiftRechargeReceiver& receiver,
                                                       void* source) {
     receiver.source = source;
     engine::register_owner(owners_, &receiver, memory_);
 }
-void ExploitRechargeObserverRegistry::append(client::PredictionHistoryOwner& owner) {
+void TickShiftRechargeObserverRegistry::append(client::PredictionHistoryOwner& owner) {
     append_receiver(owner.recharge_receiver, &owner);
 }
-void ExploitRechargeObserverRegistry::append(client::EntityCommandOwner& owner) {
+void TickShiftRechargeObserverRegistry::append(client::EntityCommandOwner& owner) {
     append_receiver(owner.recharge_receiver, &owner);
 }
-void ExploitRechargeObserverRegistry::append(ExploitShotFeedbackObserver& owner) {
+void TickShiftRechargeObserverRegistry::append(TickShiftShotFeedbackObserver& owner) {
     append_receiver(owner.receiver, &owner);
 }
-void ExploitRechargeObserverRegistry::append(ExploitViewmodelRecharge& owner) {
+void TickShiftRechargeObserverRegistry::append(TickShiftViewmodelRecharge& owner) {
     append_receiver(owner.receiver, &owner);
 }
-void ExploitRechargeObserverRegistry::append_noop(NativeExploitRechargeReceiver& receiver,
+void TickShiftRechargeObserverRegistry::append_noop(NativeTickShiftRechargeReceiver& receiver,
                                                   void* source) {
     append_receiver(receiver, source);
 }
-void ExploitRechargeObserverRegistry::publish(
+void TickShiftRechargeObserverRegistry::publish(
     client::PredictionHistoryOwner& owner) const noexcept {
     owner.recharge_receiver.vtable = &prediction_entries;
 }
-void ExploitRechargeObserverRegistry::publish(client::EntityCommandOwner& owner) const noexcept {
+void TickShiftRechargeObserverRegistry::publish(client::EntityCommandOwner& owner) const noexcept {
     owner.recharge_receiver.vtable = &entity_entries;
 }
-void ExploitRechargeObserverRegistry::publish(ExploitShotFeedbackObserver& owner) const noexcept {
+void TickShiftRechargeObserverRegistry::publish(TickShiftShotFeedbackObserver& owner) const noexcept {
     owner.receiver.vtable = &feedback_entries;
 }
-void ExploitRechargeObserverRegistry::publish(ExploitViewmodelRecharge& owner) const noexcept {
+void TickShiftRechargeObserverRegistry::publish(TickShiftViewmodelRecharge& owner) const noexcept {
     owner.receiver.vtable = &viewmodel_entries;
 }
-void ExploitRechargeObserverRegistry::publish_noop(
-    NativeExploitRechargeReceiver& receiver) const noexcept {
+void TickShiftRechargeObserverRegistry::publish_noop(
+    NativeTickShiftRechargeReceiver& receiver) const noexcept {
     receiver.vtable = &noop_entries;
 }
 
-void ExploitRechargeObserverRegistry::notify_recharge(void* player, std::int32_t number) const {
+void TickShiftRechargeObserverRegistry::notify_recharge(void* player, std::int32_t number) const {
     //433AC27B/281: capture end, then begin, once before any slot1 call.
     auto** const end = owners_.end;
     auto** cursor = owners_.begin;
@@ -133,7 +133,7 @@ void ExploitRechargeObserverRegistry::notify_recharge(void* player, std::int32_t
         receiver.vtable->recharge(&receiver, player, number);
     }
 }
-void ExploitRechargeObserverRegistry::notify_generated(void* player, std::int32_t final_command,
+void TickShiftRechargeObserverRegistry::notify_generated(void* player, std::int32_t final_command,
                                                        std::int32_t count) const {
     //4335B693/6A0: end and begin are captured before the first slot0 call.
     auto** const end = owners_.end;
@@ -143,7 +143,7 @@ void ExploitRechargeObserverRegistry::notify_generated(void* player, std::int32_
         receiver.vtable->generated(&receiver, player, final_command, count);
     }
 }
-void ExploitRechargeObserverRegistry::notify_cloned(void* player, client::Command& command) const {
+void TickShiftRechargeObserverRegistry::notify_cloned(void* player, client::Command& command) const {
     //433674CF/D5 retains actual slot2 traversal, including genuine RET8 entries.
     auto** const end = owners_.end;
     auto** cursor = owners_.begin;
@@ -152,22 +152,22 @@ void ExploitRechargeObserverRegistry::notify_cloned(void* player, client::Comman
         receiver.vtable->cloned(&receiver, player, &command);
     }
 }
-void ExploitRechargeObserverRegistry::finalize_storage() const {
+void TickShiftRechargeObserverRegistry::finalize_storage() const {
     engine::UnloadSystemFunctions memory;
     memory.free_heap = memory_.free;
     memory.process_heap = memory_.process_heap;
     engine::free_native_allocation(owners_.begin, memory);
 }
-void notify_exploit_recharge_observers(const ExploitRechargeObserverRegistry& registry,
+void notify_tick_shift_recharge_observers(const TickShiftRechargeObserverRegistry& registry,
                                        void* player, std::int32_t number) {
     registry.notify_recharge(player, number);
 }
-void notify_exploit_generated_observers(const ExploitRechargeObserverRegistry& registry,
+void notify_tick_shift_generated_observers(const TickShiftRechargeObserverRegistry& registry,
                                         void* player, std::int32_t final_command,
                                         std::int32_t count) {
     registry.notify_generated(player, final_command, count);
 }
 } //namespace skeet::network
 
-#undef EXPLOIT_RECHARGE_FAST
-#undef EXPLOIT_RECHARGE_MEMBER
+#undef TICK_SHIFT_RECHARGE_FAST
+#undef TICK_SHIFT_RECHARGE_MEMBER

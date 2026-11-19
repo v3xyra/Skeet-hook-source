@@ -5,7 +5,7 @@
 #include "skeet/engine/owner_registry.hpp"
 #include "skeet/engine/native_data_image.hpp"
 #include "skeet/network/data_update_observers.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/prediction/observer_registry.hpp"
 
 namespace skeet::client {
@@ -18,7 +18,7 @@ struct EntityCommandOwnerRegistries {
     network::DataUpdateObserverRegistry& data_updates; //4337EFD9
     EntityObserverRegistry& entities; //4333BF32
     engine::OwnerRegistryBinding map_entities; //433817AA
-    network::ExploitRechargeObserverRegistry& recharge; //4334E132
+    network::TickShiftRechargeObserverRegistry& recharge; //4334E132
 };
 struct EntityCommandFactoryBindings {
     EntityCommandOwnerRegistries registries;

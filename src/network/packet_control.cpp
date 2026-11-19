@@ -245,14 +245,14 @@ std::int32_t next_shuffle_random(ShuffleRandom& state) noexcept {
     state.table[std::uint32_t(index)] = state.seed;
     return state.previous;
 }
-std::int32_t pending_exploit_commands(const ExploitState& state, std::int32_t choked) noexcept {
+std::int32_t pending_tick_shift_commands(const TickShiftState& state, std::int32_t choked) noexcept {
     auto result = std::min(sub(sub(state.budget, choked), 1), state.available);
     for (std::int32_t i = 0; i < state.history_count; ++i)
         result = std::min(result, state.history[(state.history_first + std::uint32_t(i)) & 7U]);
     return add(add(choked, 1), result);
 }
-void select_exploit_mode(ExploitState& state, std::int32_t budget,
-                         const ExploitGates& gates) noexcept {
+void select_tick_shift_mode(TickShiftState& state, std::int32_t budget,
+                         const TickShiftGates& gates) noexcept {
     state.mode = 0;
     state.budget = budget;
     state.minimum = sub(budget, 1);
@@ -276,13 +276,13 @@ void select_exploit_mode(ExploitState& state, std::int32_t budget,
 std::int32_t cap_fake_lag_commands(const FakeLagState& state, std::int32_t limit) noexcept {
     return std::min(state.configured_cap, limit);
 }
-std::int32_t cap_exploit_commands(const ExploitState& state, std::int32_t limit) noexcept {
+std::int32_t cap_tick_shift_commands(const TickShiftState& state, std::int32_t limit) noexcept {
     return state.mode != 0 || state.available > 0 ? std::min(state.minimum, limit) : limit;
 }
-void update_exploit_command(ExploitState& state, ExploitFrame& frame, ExploitCommand& command,
-                            const ExploitTiming& timing, std::uint32_t& flags) noexcept {
+void update_tick_shift_command(TickShiftState& state, TickShiftFrame& frame, TickShiftCommand& command,
+                            const TickShiftTiming& timing, std::uint32_t& flags) noexcept {
     frame.choke_end = add(add(timing.choked, state.available), 1);
-    frame.exploit_mode = state.available < state.limit ? 0 : state.mode;
+    frame.tick_shift_mode = state.available < state.limit ? 0 : state.mode;
     frame.next_tick = frame.tick_base;
     frame.saved_tick_base = frame.tick_base;
     frame.flags = (frame.flags & ~0x40000000U) | ((state.flags << 25) & 0x40000000U);
@@ -338,12 +338,12 @@ void update_exploit_command(ExploitState& state, ExploitFrame& frame, ExploitCom
             }
         }
     }
-    if (frame.exploit_mode == 2 &&
+    if (frame.tick_shift_mode == 2 &&
         (state.available < state.limit || (frame.flags & 0x20000000U) || frame.weapon_id == 0x31 ||
          frame.weapon_id == 0x40 || frame.weapon_type == 9))
-        frame.exploit_mode = 0;
+        frame.tick_shift_mode = 0;
 }
-void apply_exploit_weapon_gate(const ExploitState& state, std::int32_t last_outgoing, bool enabled,
+void apply_tick_shift_weapon_gate(const TickShiftState& state, std::int32_t last_outgoing, bool enabled,
                                std::uint8_t weapon_type, std::int32_t choked,
                                std::uint32_t& frame_flags, std::uint32_t& command_flags,
                                std::uint8_t& send_packet) noexcept {

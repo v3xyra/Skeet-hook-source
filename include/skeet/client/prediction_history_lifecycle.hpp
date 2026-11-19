@@ -6,7 +6,7 @@
 #include "skeet/config.hpp"
 #include "skeet/engine/owner_registry.hpp"
 #include "skeet/network/data_update_observers.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/prediction/observer_registry.hpp"
 
 namespace skeet::client {
@@ -18,7 +18,7 @@ struct PredictionHistoryRegistries {
     prediction::ObserverRegistry& prediction; //43475AB0
     EntityObserverRegistry& entities; //43475BA8
     network::DataUpdateObserverRegistry& data_updates; //43475760
-    network::ExploitRechargeObserverRegistry& recharge; //actual43475784 buffer
+    network::TickShiftRechargeObserverRegistry& recharge; //actual43475784 buffer
 };
 struct PredictionHistoryLifecycleBindings {
     // The same canonical state/views consumed by commands, prediction, RAGE

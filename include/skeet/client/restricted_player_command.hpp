@@ -1,6 +1,6 @@
 #pragma once
 #include "commands.hpp"
-#include "skeet/network/exploit_runtime.hpp"
+#include "skeet/network/tick_shift_runtime.hpp"
 #include "skeet/animation/entity_update.hpp"
 #include "skeet/animation/local_helpers.hpp"
 #include "skeet/client/player_state.hpp"
@@ -35,10 +35,10 @@ static_assert(offsetof(RestrictedCommandPrediction0x4C, origin) == 0x14);
 static_assert(offsetof(RestrictedCommandPrediction0x4C, velocity) == 0x30);
 
 // Borrowed views of the single owner behind434759B4. The producer and its
-// native storage remain shared with exploit cloning and RAGE history reads.
+// native storage remain shared with tick-shift cloning and RAGE history reads.
 struct RestrictedPlayerCommandOwner {
     const std::int32_t* last_processed_command; // owner+38
-    network::ExploitCommandSnapshot* snapshots; // owner+3C,150 entries
+    network::TickShiftCommandSnapshot* snapshots; // owner+3C,150 entries
     RestrictedCommandPrediction0x4C* prediction_records; // owner+40,150 entries
     const std::uint32_t* command_tags; // owner+1AC,150 entries
     const std::uint32_t* landing_tags; // owner+404,150 entries

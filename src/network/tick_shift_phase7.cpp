@@ -1,5 +1,5 @@
-#include "skeet/network/exploit_phase7.hpp"
-#include "skeet/network/exploit_phase_state.hpp"
+#include "skeet/network/tick_shift_phase7.hpp"
+#include "skeet/network/tick_shift_phase_state.hpp"
 #include "skeet/anti_aim/config.hpp"
 #include "skeet/anti_aim/movement_capture.hpp"
 #include "skeet/anti_aim/targets.hpp"
@@ -59,7 +59,7 @@ MovementAngles angles(const std::array<float, 3>& a) noexcept {
 void* frame_weapon(const client::CommandFrame& frame) noexcept {
     return reinterpret_cast<void*>(std::uintptr_t(frame.weapon_address));
 }
-std::int32_t process_ticks(const ExploitRuntimeSettings& settings, float interval) noexcept {
+std::int32_t process_ticks(const TickShiftRuntimeSettings& settings, float interval) noexcept {
     auto time =
         _mm_div_ss(_mm_cvtepi32_ps(_mm_cvtsi32_si128(settings.process_milliseconds_43468290)),
                    _mm_set_ss(1000.0f));
@@ -67,7 +67,7 @@ std::int32_t process_ticks(const ExploitRuntimeSettings& settings, float interva
     return _mm_cvttss_si32(_mm_add_ss(_mm_div_ss(time, _mm_set_ss(interval)), _mm_set_ss(0.5f)));
 }
 void apply_buttons(void* player, const client::Command& command,
-                   const ExploitPhase7Offsets& o) noexcept {
+                   const TickShiftPhase7Offsets& o) noexcept {
     const auto old = read<std::uint32_t>(player, o.buttons_4746d093);
     write(player, o.previous_buttons_e765ed03, old);
     write(player, o.buttons_4746d093, command.movement.buttons);
@@ -101,7 +101,7 @@ struct WeaponTime {
 // cloning and after each generated movement/AA pass. Every tick reads current
 // ConVars, player properties and collision interfaces through canonical bodies.
 bool predictive_attack_clear(const client::CommandFrame& frame, void* player,
-                             ExploitRuntimeBindings& runtime, ExploitPhase7Bindings& bindings) {
+                             TickShiftRuntimeBindings& runtime, TickShiftPhase7Bindings& bindings) {
     if (!(frame.flags & 0x400U) || !frame.weapon_address || !(frame.flags & 0x40000U))
         return false;
     auto* weapon = frame_weapon(frame);
@@ -149,7 +149,7 @@ bool predictive_attack_clear(const client::CommandFrame& frame, void* player,
 }
 
 void capture_generated_frame(client::CommandFrame& frame, void* player, client::Command& command,
-                             ExploitRuntimeBindings& runtime, ExploitPhase7Bindings& bindings) {
+                             TickShiftRuntimeBindings& runtime, TickShiftPhase7Bindings& bindings) {
     const auto capture = bindings.capture.recapture(player);
     const auto& common = capture.offsets.common;
     const auto& o = bindings.capture_offsets;
@@ -188,7 +188,7 @@ void capture_generated_frame(client::CommandFrame& frame, void* player, client::
 }
 
 void run_generated_player(void* player, client::Command& command,
-                          const client::CommandFrame& original, ExploitPhase7Bindings& bindings,
+                          const client::CommandFrame& original, TickShiftPhase7Bindings& bindings,
                           float current_time) {
     WeaponTime weapon_time(frame_weapon(original), bindings.capture_offsets, current_time);
     if (bindings.prediction_bindings.flag_head)
@@ -210,10 +210,10 @@ void run_generated_player(void* player, client::Command& command,
 }
 }
 
-void process_exploit_phase7(ExploitRuntimeState& runtime, ExploitPhaseState& phase,
+void process_tick_shift_phase7(TickShiftRuntimeState& runtime, TickShiftPhaseState& phase,
                             client::CommandFrame& frame, void* player, client::Command& command,
-                            std::uint8_t& send, const ExploitRuntimeSettings& settings,
-                            ExploitRuntimeBindings& live, ExploitPhase7Bindings& bindings,
+                            std::uint8_t& send, const TickShiftRuntimeSettings& settings,
+                            TickShiftRuntimeBindings& live, TickShiftPhase7Bindings& bindings,
                             std::uint32_t& flags) {
     auto& state = runtime.network;
     if (!send || read<std::uint8_t>(player, live.offsets.player_block_9d920e35))
@@ -372,7 +372,7 @@ void process_exploit_phase7(ExploitRuntimeState& runtime, ExploitPhaseState& pha
               add(read<std::int32_t>(player, live.offsets.tick_base_3d10b94c), 1));
     }
     bindings.attack_mask = UINT32_MAX;
-    notify_exploit_generated_observers(bindings.generated_observers, player, number, count);
+    notify_tick_shift_generated_observers(bindings.generated_observers, player, number, count);
     state.available = state.mode ? (std::max)(subtract(state.available, count), 0) : 0;
     if (auto* const history = live.prediction_history_owner)
         history->state.prediction_stamp = *live.history_stamp_4346a334;

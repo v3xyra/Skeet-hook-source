@@ -36,16 +36,16 @@ void draw_rage_indicators(ui::RenderQueue& queue, script::Bridge& scripts,
                           const esp::AimbotVisualizationConfig& visualization,
                           esp::HitboxHighlightState& highlight_state,
                           const esp::HitboxHighlightContext& highlight_context);
-struct ExploitIndicatorBindings {
+struct TickShiftIndicatorBindings {
     void* entity_list = nullptr;
     std::uint32_t life_state, active_weapon, weapon_definition;
 };
 // Complete valid-player 433E1B2F. Both timers decay before the mode gate.
 // shared_timer is native global43475890; state is the network interface's
-// shared exploit state, whose timer+124 aliases render-interface+134.
-void draw_exploit_indicators(ui::RenderQueue& queue, script::Bridge& scripts,
-                             network::ExploitState& state, float& shared_timer,
+// shared tick-shift state, whose timer+124 aliases render-interface+134.
+void draw_tick_shift_indicators(ui::RenderQueue& queue, script::Bridge& scripts,
+                             network::TickShiftState& state, float& shared_timer,
                              const IntegerConfig& feature_indicators, void* local_player,
-                             const ExploitIndicatorBindings& bindings, float frame_time,
+                             const TickShiftIndicatorBindings& bindings, float frame_time,
                              std::int32_t& cursor, const esp::IndicatorLayout& layout);
 } // namespace skeet::hud

@@ -36,11 +36,11 @@ ScriptCommandBaseline capture_script_command(ScriptCommand& state, const Command
     state.weapon_select = command.weapon_select;
     state.weapon_subtype = command.weapon_subtype;
     state.move_yaw = move_yaw;
-    state.exploit_state = (flags & 0x600) != 0;
+    state.tick_shift_state = (flags & 0x600) != 0;
     state.state_bit_3 = (flags >> 3) & 1;
     state.state_bit_18 = (flags >> 18) & 1;
     state.state_bit_20 = 0;
-    return {state.send_packet, state.exploit_state, state.state_bit_18};
+    return {state.send_packet, state.tick_shift_state, state.state_bit_18};
 }
 
 void apply_script_command(ScriptCommand& state, Command& command, float& move_yaw,
@@ -81,8 +81,8 @@ void apply_script_command(ScriptCommand& state, Command& command, float& move_ya
         move_yaw = wrapped(state.move_yaw);
     if (state.force_defensive != 0)
         flags |= 0x80000;
-    if (state.exploit_state != baseline.exploit_state)
-        flags ^= ((std::uint32_t(state.exploit_state) << 9) ^ flags) & 0x600;
+    if (state.tick_shift_state != baseline.tick_shift_state)
+        flags ^= ((std::uint32_t(state.tick_shift_state) << 9) ^ flags) & 0x600;
     if (state.state_bit_18 != baseline.state_bit_18)
         flags ^= ((std::uint32_t(state.state_bit_18) << 18) ^ flags) & 0x40000;
     if (state.state_bit_20 != 0)

@@ -16,11 +16,11 @@ namespace skins {
 class NativeAgentRuntime;
 }
 namespace network {
-struct ExploitAcknowledgementOwner;
+struct TickShiftAcknowledgementOwner;
 enum class DataUpdateObserverId : std::uint32_t {
     prediction_history = 0x43470720U,
     agents = 0x43472978U,
-    exploit = 0x43472100U,
+    tick_shift = 0x43472100U,
     entity_commands = 0x4346F814U,
 };
 struct DataUpdateObserverTable {
@@ -46,13 +46,13 @@ public:
     // not select or reorder source owners. Each owner must retain its address.
     void append(client::PredictionHistoryOwner&);
     void append(skins::NativeAgentRuntime&);
-    void append(ExploitAcknowledgementOwner&);
+    void append(TickShiftAcknowledgementOwner&);
     void append(client::EntityCommandOwner&);
     // Constructors publish the actual final tables after their remaining
     // registrations, at4347D064/DACA/DF38/F9A5 respectively.
     void publish(client::PredictionHistoryOwner&) const noexcept;
     void publish(skins::NativeAgentRuntime&) const noexcept;
-    void publish(ExploitAcknowledgementOwner&) const noexcept;
+    void publish(TickShiftAcknowledgementOwner&) const noexcept;
     void publish(client::EntityCommandOwner&) const noexcept;
     std::span<void* const> owners() const noexcept {
         return owners_.entries();

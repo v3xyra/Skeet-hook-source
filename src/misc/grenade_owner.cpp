@@ -62,7 +62,7 @@ public:
     HudEndpoint hud{{nullptr}, this};
     client::NativeEntityObserverReceiver entity_receiver{};
     UpdateEndpoint update{{nullptr}, this};
-    network::NativeExploitRechargeReceiver recharge_receiver{};
+    network::NativeTickShiftRechargeReceiver recharge_receiver{};
     client::NativeCommandEmptyTickReceiver empty_tick_receiver{};
     alignas(
         esp::GrenadeLiveScene) std::array<std::byte, sizeof(esp::GrenadeLiveScene)> live_storage;

@@ -306,7 +306,7 @@ target_sources(skeet_core PRIVATE
   src/movement/simulation_collision.cpp
   src/movement/simulation_step.cpp
   src/movement/simulation_tick.cpp
-  src/network/exploit_runtime.cpp
+  src/network/tick_shift_runtime.cpp
   src/network/packet_duck.cpp
   src/network/packet_scheduler.cpp
   src/network/packet_tick.cpp
@@ -522,9 +522,9 @@ target_sources(skeet_core PRIVATE
   src/movement/release_command.cpp
   src/movement/simulation_capture.cpp
   src/movement/simulation_environment.cpp
-  src/network/exploit_command_owner.cpp
-  src/network/exploit_phase1.cpp
-  src/network/exploit_phase7.cpp
+  src/network/tick_shift_command_owner.cpp
+  src/network/tick_shift_phase1.cpp
+  src/network/tick_shift_phase7.cpp
   src/network/update_observers.cpp
   src/rage/acquisition_frame.cpp
   src/rage/acquisition_state.cpp
@@ -569,7 +569,7 @@ target_sources(skeet_core PRIVATE
   src/movement/normalized_air_solver.cpp
   src/movement/speed_control_live.cpp
   src/network/active_sound_retention.cpp
-  src/network/exploit_observers.cpp
+  src/network/tick_shift_observers.cpp
   src/network/incoming_acknowledgement.cpp
   src/network/incoming_update.cpp
   src/network/shared_esp.cpp
@@ -633,9 +633,9 @@ target_sources(skeet_core PRIVATE
   src/network/client_state_hooks.cpp
   src/network/client_state_signon.cpp
   src/network/data_update_observers.cpp
-  src/network/exploit_acknowledgement.cpp
-  src/network/exploit_message.cpp
-  src/network/exploit_owner.cpp
+  src/network/tick_shift_acknowledgement.cpp
+  src/network/tick_shift_message.cpp
+  src/network/tick_shift_owner.cpp
   src/network/tick_update_dispatch.cpp
   src/prediction/entity_update.cpp
   src/rage/acquisition_allocation.cpp
@@ -859,7 +859,7 @@ target_sources(skeet_core PRIVATE
   src/client/command_capture_runtime_owner.cpp
   src/client/command_runtime_owner.cpp
   src/client/command_checksum.cpp
-  src/client/exploit_runtime_owner.cpp
+  src/client/tick_shift_runtime_owner.cpp
   src/client/local_animation_runtime_owner.cpp
   src/client/packet_runtime_owner.cpp
   src/client/shared_esp_runtime_owner.cpp

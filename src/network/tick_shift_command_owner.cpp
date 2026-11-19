@@ -1,6 +1,6 @@
-#include "skeet/network/exploit_command_owner.hpp"
-#include "skeet/network/exploit_phase1.hpp"
-#include "skeet/network/exploit_phase7.hpp"
+#include "skeet/network/tick_shift_command_owner.hpp"
+#include "skeet/network/tick_shift_phase1.hpp"
+#include "skeet/network/tick_shift_phase7.hpp"
 #include "skeet/engine/interface_call.hpp"
 #include <bit>
 #include <cstring>
@@ -18,7 +18,7 @@ std::int32_t add(std::int32_t first, std::int32_t second) noexcept {
 void* frame_weapon(const client::CommandFrame& frame) noexcept {
     return reinterpret_cast<void*>(std::uintptr_t(frame.weapon_address));
 }
-ExploitRuntimeSettings current_settings(const ExploitCommandOwner& owner) {
+TickShiftRuntimeSettings current_settings(const TickShiftCommandOwner& owner) {
     const auto& base = owner.settings;
     return {owner.controls,
             base.command_block,
@@ -27,7 +27,7 @@ ExploitRuntimeSettings current_settings(const ExploitCommandOwner& owner) {
             base.process_milliseconds_43468290,
             base.health_divisor_4346db30};
 }
-void refresh_timing(ExploitCommandOwner& owner) {
+void refresh_timing(TickShiftCommandOwner& owner) {
     auto& bindings = owner.bindings;
     auto& timing = bindings.timing;
     timing.choked = *bindings.choked_commands;
@@ -46,7 +46,7 @@ void refresh_timing(ExploitCommandOwner& owner) {
 }
 }
 
-void reset_exploit_command_owner(ExploitCommandOwner& owner) noexcept {
+void reset_tick_shift_command_owner(TickShiftCommandOwner& owner) noexcept {
     auto& runtime = owner.runtime;
     auto& state = runtime.network;
     state.available = 0;
@@ -63,14 +63,14 @@ void reset_exploit_command_owner(ExploitCommandOwner& owner) noexcept {
     runtime.last_flush_command_134 = -1;
 }
 
-void exploit_owner_phase1(ExploitCommandOwner& owner, void* player, void*, client::Command& command,
+void tick_shift_owner_phase1(TickShiftCommandOwner& owner, void* player, void*, client::Command& command,
                           std::uint8_t& send_packet) {
     const auto settings = current_settings(owner);
-    process_exploit_phase1(owner.runtime, owner.phases, player, command, send_packet, settings,
+    process_tick_shift_phase1(owner.runtime, owner.phases, player, command, send_packet, settings,
                            owner.bindings, owner.phase1, owner.command_flags);
 }
 
-void exploit_owner_phase2(ExploitCommandOwner& owner, void*, void* weapon, client::Command& command,
+void tick_shift_owner_phase2(TickShiftCommandOwner& owner, void*, void* weapon, client::Command& command,
                           std::uint8_t&, std::array<float, 3>&) {
     auto& state = owner.runtime.network;
     auto& bindings = owner.bindings;
@@ -113,15 +113,15 @@ void exploit_owner_phase2(ExploitCommandOwner& owner, void*, void* weapon, clien
     }
 }
 
-void exploit_owner_phase3(ExploitCommandOwner& owner, client::CommandFrame& frame, void*,
+void tick_shift_owner_phase3(TickShiftCommandOwner& owner, client::CommandFrame& frame, void*,
                           client::Command&, std::uint8_t& send_packet) {
-    apply_exploit_weapon_gate(owner.runtime.network, *owner.bindings.last_outgoing,
+    apply_tick_shift_weapon_gate(owner.runtime.network, *owner.bindings.last_outgoing,
                               owner.settings.special_weapon_43467560, frame.weapon_kind_124,
                               frame.choked_15c, frame.secondary_flags, owner.command_flags,
                               send_packet);
 }
 
-void exploit_owner_phase4(ExploitCommandOwner& owner, client::CommandFrame& frame, void* player,
+void tick_shift_owner_phase4(TickShiftCommandOwner& owner, client::CommandFrame& frame, void* player,
                           client::Command& command, std::uint8_t&) {
     refresh_timing(owner);
     auto& timing = owner.bindings.timing;
@@ -139,7 +139,7 @@ void exploit_owner_phase4(ExploitCommandOwner& owner, client::CommandFrame& fram
         timing.freeze_period =
             rules && field<std::uint8_t>(rules, owner.bindings.firing.offsets.rule_d720aea6);
     }
-    ExploitFrame projected{frame.flags,
+    TickShiftFrame projected{frame.flags,
                            frame.previous_command.movement.buttons,
                            frame.weapon_address != 0,
                            frame.command_number_ac,
@@ -150,13 +150,13 @@ void exploit_owner_phase4(ExploitCommandOwner& owner, client::CommandFrame& fram
                            std::bit_cast<std::int32_t>(frame.field_1d4),
                            std::bit_cast<std::int32_t>(frame.field_1d8),
                            std::bit_cast<std::int32_t>(frame.field_1e0)};
-    ExploitCommand input{command.number, command.angles[0], command.angles[1],
+    TickShiftCommand input{command.number, command.angles[0], command.angles[1],
                          command.movement.buttons};
-    update_exploit_command(owner.runtime.network, projected, input, owner.bindings.timing,
+    update_tick_shift_command(owner.runtime.network, projected, input, owner.bindings.timing,
                            owner.command_flags);
     frame.flags = projected.flags;
     frame.field_cc = std::uint32_t(projected.saved_tick_base);
-    frame.field_1d4 = std::uint32_t(projected.exploit_mode);
+    frame.field_1d4 = std::uint32_t(projected.tick_shift_mode);
     frame.field_1d8 = std::uint32_t(projected.next_tick);
     frame.field_1e0 = std::uint32_t(projected.choke_end);
     command.angles[0] = input.pitch;
@@ -164,19 +164,19 @@ void exploit_owner_phase4(ExploitCommandOwner& owner, client::CommandFrame& fram
     command.movement.buttons = input.buttons;
 }
 
-void exploit_owner_phase5(ExploitCommandOwner& owner, client::CommandFrame& frame, void* player,
+void tick_shift_owner_phase5(TickShiftCommandOwner& owner, client::CommandFrame& frame, void* player,
                           client::Command& command, std::uint8_t& send_packet) {
     refresh_timing(owner);
     const auto settings = current_settings(owner);
-    process_exploit_runtime(owner.runtime, frame, player, frame_weapon(frame), command, send_packet,
+    process_tick_shift_runtime(owner.runtime, frame, player, frame_weapon(frame), command, send_packet,
                             settings, owner.bindings, owner.command_flags);
 }
 
-void exploit_owner_phase7(ExploitCommandOwner& owner, client::CommandFrame& frame, void* player,
+void tick_shift_owner_phase7(TickShiftCommandOwner& owner, client::CommandFrame& frame, void* player,
                           client::Command& command, std::uint8_t& send_packet) {
     refresh_timing(owner);
     const auto settings = current_settings(owner);
-    process_exploit_phase7(owner.runtime, owner.phases, frame, player, command, send_packet,
+    process_tick_shift_phase7(owner.runtime, owner.phases, frame, player, command, send_packet,
                            settings, owner.bindings, owner.phase7, owner.command_flags);
 }
 } // namespace skeet::network

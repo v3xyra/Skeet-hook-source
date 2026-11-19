@@ -3,7 +3,7 @@
 #include "skeet/engine/owner_registry.hpp"
 #include "skeet/misc/config.hpp"
 #include "skeet/misc/quick_switch.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/prediction/observer_registry.hpp"
 
 namespace skeet::misc {
@@ -18,6 +18,6 @@ std::size_t quick_switch_owner_size() noexcept;
 // then reset+30/+34 only. Captured command/throw/pin state is preserved.
 QuickSwitchLifecycleOwner& construct_quick_switch(
     void* storage, engine::OwnerRegistryBinding lifecycle, client::CommandPhaseRegistry& commands,
-    network::ExploitRechargeObserverRegistry& recharge, prediction::ObserverRegistry&,
+    network::TickShiftRechargeObserverRegistry& recharge, prediction::ObserverRegistry&,
     ConfigRegistries&, QuickSwitchConfig&, QuickSwitchRuntime&);
 } //namespace skeet::misc

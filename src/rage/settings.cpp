@@ -50,7 +50,7 @@ void initialize_aimbot_settings(ConfigRegistries& r, AimbotSettings& c) noexcept
     initialize_boolean_config(d, c.delay_shot, 0xA09C0D52);
     initialize_boolean_config(d, c.force_body_aim_on_peek, 0x9BBD48EA);
 }
-void initialize_exploit_settings(ConfigRegistries& r, ExploitSettings& c) noexcept {
+void initialize_tick_shift_settings(ConfigRegistries& r, TickShiftSettings& c) noexcept {
     auto& d = r.descriptors;
     initialize_boolean_config(d, c.on_shot_anti_aim, 0xB2467427);
     initialize_hotkey_config(r, c.on_shot_key, 0x8F4F3C91, 0x1B, HotkeyMode::always);
@@ -72,7 +72,7 @@ void initialize_performance_settings(ConfigRegistries& r, PerformanceSettings& c
 void initialize_settings(ConfigRegistries& r, Settings& c) noexcept {
     initialize_global_settings(r, c.global);
     initialize_aimbot_settings(r, c.aimbot);
-    initialize_exploit_settings(r, c.exploits);
+    initialize_tick_shift_settings(r, c.tick_shift);
     initialize_shot_log_settings(r, c.shot_log);
     initialize_performance_settings(r, c.performance);
     initialize_quick_peek_config(r, c.quick_peek);

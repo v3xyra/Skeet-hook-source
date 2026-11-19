@@ -1,4 +1,4 @@
-#include "skeet/network/exploit_message.hpp"
+#include "skeet/network/tick_shift_message.hpp"
 #include "skeet/client/commands.hpp"
 #include "skeet/engine/interface_call.hpp"
 #include <array>
@@ -34,20 +34,20 @@ void __fastcall message_entry(void* object, misc::NetworkMessageCall* call) {
 #else
 void message_entry(void* object, misc::NetworkMessageCall* call) {
 #endif
-    auto& endpoint = *static_cast<ExploitMessageHandler*>(object);
-    rewrite_exploit_command_message(endpoint.state, endpoint.bindings, *call);
+    auto& endpoint = *static_cast<TickShiftMessageHandler*>(object);
+    rewrite_tick_shift_command_message(endpoint.state, endpoint.bindings, *call);
 }
 const std::array<misc::NetworkMessageEntry, 1> message_table{message_entry};
 }
-ExploitMessageHandler::ExploitMessageHandler(ExploitState& state_value,
-                                             const ExploitMessageBindings& current) noexcept
+TickShiftMessageHandler::TickShiftMessageHandler(TickShiftState& state_value,
+                                             const TickShiftMessageBindings& current) noexcept
     : NetworkMessageCallback{nullptr}, state(state_value), bindings(current) {}
-void ExploitMessageHandler::publish_table() noexcept {
+void TickShiftMessageHandler::publish_table() noexcept {
     vtable = message_table.data();
 }
 
-void rewrite_exploit_command_message(const ExploitState& state,
-                                     const ExploitMessageBindings& bindings,
+void rewrite_tick_shift_command_message(const TickShiftState& state,
+                                     const TickShiftMessageBindings& bindings,
                                      misc::NetworkMessageCall& call) {
     if (engine::invoke<std::int32_t>(call.message, 7) != 9)
         return;
@@ -83,7 +83,7 @@ void rewrite_exploit_command_message(const ExploitState& state,
     encoded.size = 0;
     encoded.capacity = 15;
     std::array<std::byte, 4001> bytes;
-    ExploitCommandWriter writer{bytes.data(), 4000, 32000, 0, 0, 0, 0, nullptr};
+    TickShiftCommandWriter writer{bytes.data(), 4000, 32000, 0, 0, 0, 0, nullptr};
     write(message, 0xC, std::int32_t(2));
     write(message, 0x14, &encoded);
     const auto count = requested < 60 ? requested : 60;

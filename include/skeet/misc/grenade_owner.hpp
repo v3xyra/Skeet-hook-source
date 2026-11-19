@@ -6,7 +6,7 @@
 #include "skeet/esp/grenade_live_bindings.hpp"
 #include "skeet/hud/composite_runtime.hpp"
 #include "skeet/network/update_observers.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 
 namespace skeet::misc {
 struct GrenadeOwnerRegistries {
@@ -16,7 +16,7 @@ struct GrenadeOwnerRegistries {
     engine::OwnerRegistryBinding hud; //43475A9C
     client::EntityObserverRegistry& entities; //43475BA8
     engine::OwnerRegistryBinding updates; //43475988
-    network::ExploitRechargeObserverRegistry& recharge; //43475784
+    network::TickShiftRechargeObserverRegistry& recharge; //43475784
 };
 struct GrenadeOwnerBindings {
     esp::GrenadeLiveBindings live;

@@ -67,7 +67,7 @@ std::span<const char* const, 22> prediction_history_sequence_strings() noexcept 
     return strings;
 }
 struct PredictionHistoryStorage::StandaloneBuffers {
-    std::array<network::ExploitCommandSnapshot, 150> snapshots{};
+    std::array<network::TickShiftCommandSnapshot, 150> snapshots{};
     std::array<RestrictedCommandPrediction0x4C, 150> prediction_records{};
 };
 PredictionHistoryStorage::PredictionHistoryStorage(DeferredPredictionHistoryStorageTag) noexcept {
@@ -80,9 +80,9 @@ void PredictionHistoryStorage::initialize_header(const std::int32_t* current_ack
     acknowledged_command = current_ack;
     view_.last_processed_command = current_ack;
 }
-void PredictionHistoryStorage::bind_snapshots(network::ExploitCommandSnapshot* first,
+void PredictionHistoryStorage::bind_snapshots(network::TickShiftCommandSnapshot* first,
                                               std::size_t count) noexcept {
-    snapshots = first ? std::span(first, count) : std::span<network::ExploitCommandSnapshot>{};
+    snapshots = first ? std::span(first, count) : std::span<network::TickShiftCommandSnapshot>{};
     view_.snapshots = first;
 }
 void PredictionHistoryStorage::bind_prediction_records(RestrictedCommandPrediction0x4C* first,
@@ -140,7 +140,7 @@ const RestrictedPlayerCommandOwner*
 prediction_history_shared(const PredictionHistoryOwner* owner) noexcept {
     return owner ? &owner->shared : nullptr;
 }
-network::ExploitCommandSnapshot*
+network::TickShiftCommandSnapshot*
 prediction_history_snapshots(PredictionHistoryOwner* owner) noexcept {
     return owner ? owner->shared.snapshots : nullptr;
 }

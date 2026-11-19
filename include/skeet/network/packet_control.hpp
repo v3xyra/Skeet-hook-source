@@ -150,8 +150,8 @@ struct ShuffleRandom {
 };
 std::int32_t next_shuffle_random(ShuffleRandom&) noexcept; // complete 43387E35
 
-// Offsets below refer to the exploit network interface (full owner +0x18).
-struct ExploitState {
+// Offsets below refer to the tick-shift network interface (full owner +0x18).
+struct TickShiftState {
     std::uint32_t flags; // +014
     std::int32_t fake_lag_limit; // +064
     std::int32_t mode; // +0F4: 1 double tap, 2 on shot, 3 fake peek
@@ -168,7 +168,7 @@ struct ExploitState {
     std::int32_t history_count; // +1C4
     std::array<std::int32_t, 8> history; // +1C8
 };
-struct ExploitGates {
+struct TickShiftGates {
     bool connected;
     bool checksum_available;
     bool freeze_period;
@@ -184,14 +184,14 @@ struct ExploitGates {
 // registration order. These functions return that owner's concrete result.
 std::int32_t cap_fake_lag_commands(const FakeLagState&,
                                    std::int32_t running_limit) noexcept; // 4340354C
-std::int32_t cap_exploit_commands(const ExploitState&,
+std::int32_t cap_tick_shift_commands(const TickShiftState&,
                                   std::int32_t running_limit) noexcept; // 4340165F
 // Prefix 43366670..43366838. Activation inputs are the actual results of
 // the three native hotkey descriptors, in native fake-peek/double-tap/on-shot order.
-std::int32_t pending_exploit_commands(const ExploitState&, std::int32_t choked) noexcept;
-void select_exploit_mode(ExploitState&, std::int32_t new_budget, const ExploitGates&) noexcept;
+std::int32_t pending_tick_shift_commands(const TickShiftState&, std::int32_t choked) noexcept;
+void select_tick_shift_mode(TickShiftState&, std::int32_t new_budget, const TickShiftGates&) noexcept;
 
-struct ExploitFrame {
+struct TickShiftFrame {
     std::uint32_t flags; // +000
     std::uint32_t movement_flags; // +044
     bool has_weapon; // +00C
@@ -200,16 +200,16 @@ struct ExploitFrame {
     std::int32_t saved_tick_base; // +0CC
     std::int32_t weapon_id; // +0D8
     std::uint8_t weapon_type; // +124
-    std::int32_t exploit_mode; // +1D4
+    std::int32_t tick_shift_mode; // +1D4
     std::int32_t next_tick; // +1D8
     std::int32_t choke_end; // +1E0
 };
-struct ExploitCommand {
+struct TickShiftCommand {
     std::int32_t number;
     float pitch, yaw;
     std::uint32_t buttons;
 };
-struct ExploitTiming {
+struct TickShiftTiming {
     std::int32_t choked;
     std::int32_t last_outgoing;
     std::int32_t process_milliseconds;
@@ -227,9 +227,9 @@ struct ExploitTiming {
 };
 // Complete 433CE4BC, including its real latency helpers and shuffle PRNG.
 // A valid local player is a native precondition; null-player obfuscation is unreachable.
-void update_exploit_command(ExploitState&, ExploitFrame&, ExploitCommand&, const ExploitTiming&,
+void update_tick_shift_command(TickShiftState&, TickShiftFrame&, TickShiftCommand&, const TickShiftTiming&,
                             std::uint32_t& command_flags) noexcept;
-void apply_exploit_weapon_gate(const ExploitState&, std::int32_t last_outgoing, bool enabled,
+void apply_tick_shift_weapon_gate(const TickShiftState&, std::int32_t last_outgoing, bool enabled,
                                std::uint8_t weapon_type, std::int32_t choked,
                                std::uint32_t& frame_flags, std::uint32_t& command_flags,
                                std::uint8_t& send_packet) noexcept; // complete 433B56ED

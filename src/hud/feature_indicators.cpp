@@ -87,10 +87,10 @@ void draw_rage_indicators(ui::RenderQueue& queue, script::Bridge& scripts,
     esp::draw_hitbox_highlight(queue, visualization, highlight_state, local, highlight_context);
 }
 #pragma STDC FENV_ACCESS ON
-void draw_exploit_indicators(ui::RenderQueue& queue, script::Bridge& scripts,
-                             network::ExploitState& state, float& shared_timer,
+void draw_tick_shift_indicators(ui::RenderQueue& queue, script::Bridge& scripts,
+                             network::TickShiftState& state, float& shared_timer,
                              const IntegerConfig& feature_indicators, void* local,
-                             const ExploitIndicatorBindings& bindings, float frame_time,
+                             const TickShiftIndicatorBindings& bindings, float frame_time,
                              std::int32_t& cursor, const esp::IndicatorLayout& layout) {
     state.timer_124 = maximum_number(0.0f, state.timer_124 - frame_time);
     shared_timer = maximum_number(0.0f, shared_timer - frame_time);

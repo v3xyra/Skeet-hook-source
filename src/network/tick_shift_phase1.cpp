@@ -1,5 +1,5 @@
-#include "skeet/network/exploit_phase1.hpp"
-#include "skeet/network/exploit_controls.hpp"
+#include "skeet/network/tick_shift_phase1.hpp"
+#include "skeet/network/tick_shift_controls.hpp"
 #include "skeet/engine/interface_call.hpp"
 #include "skeet/misc/grenade_owner.hpp"
 #include <algorithm>
@@ -29,8 +29,8 @@ std::int32_t time_ticks(float current, float interval) noexcept {
     return _mm_cvttss_si32(
         _mm_add_ss(_mm_div_ss(_mm_set_ss(current), _mm_set_ss(interval)), _mm_set_ss(0.5f)));
 }
-void select_mode(ExploitState& state, void* player, const ExploitRuntimeSettings& settings,
-                 const ExploitRuntimeBindings& bindings, const std::uint32_t& command_flags) {
+void select_mode(TickShiftState& state, void* player, const TickShiftRuntimeSettings& settings,
+                 const TickShiftRuntimeBindings& bindings, const std::uint32_t& command_flags) {
     const auto rules = bindings.game_rules ? *bindings.game_rules : nullptr;
     const auto& offsets = bindings.offsets;
     const bool rule0 = rules && field<std::uint8_t>(rules, offsets.rule_bf567619);
@@ -50,29 +50,29 @@ void select_mode(ExploitState& state, void* player, const ExploitRuntimeSettings
     if (field<std::uint8_t>(player, offsets.player_block_9d920e35))
         return;
     if ((command_flags & 0x40U) ||
-        hotkey_active(settings.command_block, exploit_control_keys(settings)) ||
+        hotkey_active(settings.command_block, tick_shift_control_keys(settings)) ||
         (command_flags & 0x100U))
         return;
-    if (exploit_control_active(settings, ExploitControl::fake_peek))
+    if (tick_shift_control_active(settings, TickShiftControl::fake_peek))
         state.mode = 3;
-    else if (exploit_control_active(settings, ExploitControl::double_tap))
+    else if (tick_shift_control_active(settings, TickShiftControl::double_tap))
         state.mode = 1;
-    else if (exploit_control_active(settings, ExploitControl::on_shot))
+    else if (tick_shift_control_active(settings, TickShiftControl::on_shot))
         state.mode = 2;
     else
         return;
-    state.minimum = (std::max)(1, exploit_fake_lag_setting(settings));
-    state.limit = std::clamp(sub(sub(state.budget, exploit_fake_lag_setting(settings)), 1), 1, 15);
+    state.minimum = (std::max)(1, tick_shift_fake_lag_setting(settings));
+    state.limit = std::clamp(sub(sub(state.budget, tick_shift_fake_lag_setting(settings)), 1), 1, 15);
     if (state.mode == 2)
         state.flags &= ~1U;
 }
-void* active_weapon(void* player, const ExploitPhase1Bindings& bindings) {
+void* active_weapon(void* player, const TickShiftPhase1Bindings& bindings) {
     const auto handle = field<std::uint32_t>(player, bindings.active_weapon_cd812654);
     return handle == 0xFFFFFFFFU ? nullptr : engine::invoke<void*>(bindings.entity_list, 4, handle);
 }
 }
 
-bool exploit_phase1_record_pending(const ExploitPhase1Bindings& bindings, float interval) {
+bool tick_shift_phase1_record_pending(const TickShiftPhase1Bindings& bindings, float interval) {
     const auto records = misc::grenade_owner_warning_records(bindings.record_owner_43475aac);
     for (const auto& record : records) {
         if (record.type != 0 || !(record.damage > 0.0f) || record.handle == UINT32_MAX)
@@ -86,16 +86,16 @@ bool exploit_phase1_record_pending(const ExploitPhase1Bindings& bindings, float 
     return false;
 }
 
-void notify_exploit_recharge_observers(const ExploitPhase1Bindings& bindings, void* player,
+void notify_tick_shift_recharge_observers(const TickShiftPhase1Bindings& bindings, void* player,
                                        std::int32_t command_number) {
-    notify_exploit_recharge_observers(bindings.recharge_observers, player, command_number);
+    notify_tick_shift_recharge_observers(bindings.recharge_observers, player, command_number);
 }
 
-void process_exploit_phase1(ExploitRuntimeState& runtime, ExploitPhaseState& phases, void* player,
+void process_tick_shift_phase1(TickShiftRuntimeState& runtime, TickShiftPhaseState& phases, void* player,
                             client::Command& command, std::uint8_t& send_packet,
-                            const ExploitRuntimeSettings& settings,
-                            const ExploitRuntimeBindings& native,
-                            const ExploitPhase1Bindings& bindings, std::uint32_t& command_flags) {
+                            const TickShiftRuntimeSettings& settings,
+                            const TickShiftRuntimeBindings& native,
+                            const TickShiftPhase1Bindings& bindings, std::uint32_t& command_flags) {
     auto& state = runtime.network;
     if (*native.choked_commands == 0)
         state.flags = (state.flags & ~0x54U) | ((state.flags & 2U) << 1) | 3U;
@@ -104,7 +104,7 @@ void process_exploit_phase1(ExploitRuntimeState& runtime, ExploitPhaseState& pha
     select_mode(state, player, settings, native, command_flags);
     if (state.mode == 0) {
         if (state.available > 0)
-            state.minimum = (std::max)(1, exploit_fake_lag_setting(settings));
+            state.minimum = (std::max)(1, tick_shift_fake_lag_setting(settings));
         state.timer_124 = 0.0f;
         if (state.available > 0)
             force_send(command_flags);
@@ -131,12 +131,12 @@ void process_exploit_phase1(ExploitRuntimeState& runtime, ExploitPhaseState& pha
         if (!weapon || engine::invoke<std::int32_t>(weapon, 455) != 9)
             return;
     }
-    if (exploit_phase1_record_pending(bindings, *native.tick_interval))
+    if (tick_shift_phase1_record_pending(bindings, *native.tick_interval))
         return;
     // The working 433AC04B..433AC067 path retains the hotkey query, then
     // continues at 433AC16D without the command-flag or target veto.
     if (bindings.rage.enabled.value)
-        (void)hotkey_active(bindings.rage.activation.value.binding, exploit_control_keys(settings));
+        (void)hotkey_active(bindings.rage.activation.value.binding, tick_shift_control_keys(settings));
     if (state.timer_124 > 0.0f)
         return;
     const auto acknowledged = *native.command_ack;
@@ -172,6 +172,6 @@ void process_exploit_phase1(ExploitRuntimeState& runtime, ExploitPhaseState& pha
     }
     force_send(command_flags);
     send_packet = 1;
-    notify_exploit_recharge_observers(bindings, player, command.number);
+    notify_tick_shift_recharge_observers(bindings, player, command.number);
 }
 } // namespace skeet::network

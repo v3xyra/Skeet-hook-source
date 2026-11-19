@@ -97,11 +97,11 @@ struct Instance {
         //4347D094's MOV is recorded in supplied mem_int3.h:462; raw is CCx5.
         state.initialize_header(bindings.acknowledged_command); //094..09C
         auto* const snapshot_allocation = static_cast<std::byte*>(allocate(memory, 0x3112C)); //09F
-        network::ExploitCommandSnapshot* snapshots = nullptr;
+        network::TickShiftCommandSnapshot* snapshots = nullptr;
         if (snapshot_allocation) {
             constexpr std::uint32_t count = 150;
             std::memcpy(snapshot_allocation, &count, 4);
-            snapshots = ::new (snapshot_allocation + 4) network::ExploitCommandSnapshot[150];
+            snapshots = ::new (snapshot_allocation + 4) network::TickShiftCommandSnapshot[150];
             for (std::size_t index = 0; index < 150; ++index)
                 animation::initialize_animation_state_vector(
                     reinterpret_cast<std::byte*>(snapshots + index) + 0x1F4);

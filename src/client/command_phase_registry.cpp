@@ -15,7 +15,7 @@ constexpr std::array<CommandPhaseTable, 28> tables{{
     {CommandOwnerId::quick_switch,
      {{0x433C95B7u, 0x4337D653u, 0x4341704Au, 0x4334A269u, 0x4334A269u, 0x4334A269u, 0x4334A269u,
        0x4334A269u, 0x4334A269u, 0x433D2AACu}}},
-    {CommandOwnerId::exploit,
+    {CommandOwnerId::tick_shift,
      {{0x433C95B7u, 0x433ABC86u, 0x433D6A11u, 0x433B56EDu, 0x433CE4BCu, 0x4336663Fu, 0x4334A269u,
        0x43359E37u, 0x4334A269u, 0x4340165Fu}}},
     {CommandOwnerId::owner_43472148,

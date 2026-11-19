@@ -72,7 +72,7 @@ struct MiscRuntimeFactoryBindings {
     CommandPhaseRegistry& commands;
     CommandEmptyTickRegistry& empty_ticks;
     EntityObserverRegistry& entities;
-    network::ExploitRechargeObserverRegistry& recharge;
+    network::TickShiftRechargeObserverRegistry& recharge;
     prediction::ObserverRegistry& prediction;
     MiscLowFpsFactoryContext low_fps;
     MiscQuickSwitchFactoryContext quick_switch;

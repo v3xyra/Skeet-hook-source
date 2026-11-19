@@ -20,7 +20,7 @@ struct ViewmodelLagState;
 struct ViewmodelLagBindings;
 }
 namespace network {
-struct ExploitRuntimeState;
+struct TickShiftRuntimeState;
 }
 namespace script {
 struct Bridge;
@@ -31,7 +31,7 @@ struct PlayerCommandContext;
 enum class ObserverOwnerId : std::uint32_t {
     prediction_history = 0x43472060u,
     quick_switch = 0x4346FA2Cu,
-    exploit = 0x4346F7D0u,
+    tick_shift = 0x4346F7D0u,
     entity_commands = 0x43470924u,
     script = 0x43472B88u,
     viewmodel_lag = 0x4346F0D4u,
@@ -71,7 +71,7 @@ struct ObserverRegistry {
     ObserverRegistry& operator=(ObserverRegistry&&) = delete;
     void append(client::PredictionHistoryOwner&);
     void append(misc::QuickSwitchRuntime&);
-    void append(network::ExploitRuntimeState&);
+    void append(network::TickShiftRuntimeState&);
     void append(client::EntityCommandOwner&);
     void append(ScriptPredictionObserver&);
     void append(ViewmodelPredictionObserver&);
@@ -79,7 +79,7 @@ struct ObserverRegistry {
     // registrar calls, at the separately proven native write below.
     void publish(client::PredictionHistoryOwner&) const noexcept; //4347D08D
     void publish(misc::QuickSwitchRuntime&) const noexcept; //4347DC4C
-    void publish(network::ExploitRuntimeState&) const noexcept; //4347DF3F
+    void publish(network::TickShiftRuntimeState&) const noexcept; //4347DF3F
     void publish(client::EntityCommandOwner&) const noexcept; //4347F99E
     void publish(ScriptPredictionObserver&) const noexcept; //4347FFC9
     void publish(ViewmodelPredictionObserver&) const noexcept; //43486CAA

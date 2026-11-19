@@ -1,7 +1,7 @@
 #include "skeet/client/command_owner_dispatch.hpp"
 #include "skeet/anti_aim/command_owner.hpp"
 #include "skeet/network/command_owner.hpp"
-#include "skeet/network/exploit_command_owner.hpp"
+#include "skeet/network/tick_shift_command_owner.hpp"
 #include "skeet/misc/command_owner.hpp"
 #include "skeet/misc/grenade_command.hpp"
 #include "skeet/misc/viewmodel_lag.hpp"
@@ -60,9 +60,9 @@ void COMMAND_FAST viewmodel_prepare(NativeCommandPhaseReceiver* receiver, void*,
     misc::record_viewmodel_command(source<misc::ViewmodelLagState>(receiver), *command);
 }
 
-void COMMAND_FAST exploit_prepare(NativeCommandPhaseReceiver* receiver, void* player, void* weapon,
+void COMMAND_FAST tick_shift_prepare(NativeCommandPhaseReceiver* receiver, void* player, void* weapon,
                                   Command* command, std::uint8_t* send) { //433ABC86
-    network::exploit_owner_phase1(source<network::ExploitCommandOwner>(receiver), player, weapon,
+    network::tick_shift_owner_phase1(source<network::TickShiftCommandOwner>(receiver), player, weapon,
                                   *command, *send);
 }
 
@@ -99,10 +99,10 @@ void COMMAND_FAST quick_switch_prepare(NativeCommandPhaseReceiver* receiver, voi
         ->process_phase2(player, weapon, *command, *send);
 }
 
-void COMMAND_FAST exploit_preprocess(NativeCommandPhaseReceiver* receiver, void* player,
+void COMMAND_FAST tick_shift_preprocess(NativeCommandPhaseReceiver* receiver, void* player,
                                      void* weapon, Command* command, std::array<float, 3>* angles,
                                      std::uint8_t* send) { //433D6A11
-    network::exploit_owner_phase2(source<network::ExploitCommandOwner>(receiver), player, weapon,
+    network::tick_shift_owner_phase2(source<network::TickShiftCommandOwner>(receiver), player, weapon,
                                   *command, *send, *angles);
 }
 
@@ -174,9 +174,9 @@ void COMMAND_FAST anti_aim_prepare(NativeCommandPhaseReceiver* receiver, void* p
                                    *command, *angles, *send);
 }
 
-void COMMAND_FAST exploit_frame_prepare(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
+void COMMAND_FAST tick_shift_frame_prepare(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
                                         void* player, Command* command) { //433B56ED
-    network::exploit_owner_phase3(source<network::ExploitCommandOwner>(receiver), *frame, player,
+    network::tick_shift_owner_phase3(source<network::TickShiftCommandOwner>(receiver), *frame, player,
                                   *command, send_packet(*frame));
 }
 
@@ -188,9 +188,9 @@ void COMMAND_FAST automatic_process(NativeCommandPhaseReceiver* receiver, Comman
                               receiver->services->input);
 }
 
-void COMMAND_FAST exploit_process(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
+void COMMAND_FAST tick_shift_process(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
                                   void* player, Command* command) { //433CE4BC
-    network::exploit_owner_phase4(source<network::ExploitCommandOwner>(receiver), *frame, player,
+    network::tick_shift_owner_phase4(source<network::TickShiftCommandOwner>(receiver), *frame, player,
                                   *command, send_packet(*frame));
 }
 
@@ -299,9 +299,9 @@ void COMMAND_FAST anti_aim_process(NativeCommandPhaseReceiver* receiver, Command
                                    *command, send_packet(*frame));
 }
 
-void COMMAND_FAST exploit_generate(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
+void COMMAND_FAST tick_shift_generate(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
                                    void* player, Command* command) { //4336663F
-    network::exploit_owner_phase5(source<network::ExploitCommandOwner>(receiver), *frame, player,
+    network::tick_shift_owner_phase5(source<network::TickShiftCommandOwner>(receiver), *frame, player,
                                   *command, send_packet(*frame));
 }
 
@@ -368,9 +368,9 @@ void COMMAND_FAST prediction_complete(NativeCommandPhaseReceiver* receiver, Comm
                                 send_packet(*frame));
 }
 
-void COMMAND_FAST exploit_complete(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
+void COMMAND_FAST tick_shift_complete(NativeCommandPhaseReceiver* receiver, CommandFrame* frame,
                                    void* player, Command* command) { //43359E37
-    network::exploit_owner_phase7(source<network::ExploitCommandOwner>(receiver), *frame, player,
+    network::tick_shift_owner_phase7(source<network::TickShiftCommandOwner>(receiver), *frame, player,
                                   *command, send_packet(*frame));
 }
 
@@ -400,10 +400,10 @@ std::int32_t COMMAND_FAST packet_limit(NativeCommandPhaseReceiver* receiver,
                                                limit);
 }
 
-std::int32_t COMMAND_FAST exploit_limit(NativeCommandPhaseReceiver* receiver,
+std::int32_t COMMAND_FAST tick_shift_limit(NativeCommandPhaseReceiver* receiver,
                                         std::int32_t limit) { //4340165F
-    return network::cap_exploit_commands(
-        source<network::ExploitCommandOwner>(receiver).runtime.network, limit);
+    return network::cap_tick_shift_commands(
+        source<network::TickShiftCommandOwner>(receiver).runtime.network, limit);
 }
 
 struct SourceTable {
@@ -421,8 +421,8 @@ const std::array<SourceTable, 28> source_tables{{
      {noop_phase0, noop_phase1, quick_switch_prepare, noop_frame_phase, noop_frame_phase,
       noop_frame_phase, noop_frame_phase, noop_frame_phase, noop_frame_phase, unchanged_limit}},
     {static_cast<CommandOwnerId>(0x4346EDD4u),
-     {noop_phase0, exploit_prepare, exploit_preprocess, exploit_frame_prepare, exploit_process,
-      exploit_generate, noop_frame_phase, exploit_complete, noop_frame_phase, exploit_limit}},
+     {noop_phase0, tick_shift_prepare, tick_shift_preprocess, tick_shift_frame_prepare, tick_shift_process,
+      tick_shift_generate, noop_frame_phase, tick_shift_complete, noop_frame_phase, tick_shift_limit}},
     {static_cast<CommandOwnerId>(0x43472148u),
      {noop_phase0, performance_prepare, noop_phase2, noop_frame_phase, performance_process,
       noop_frame_phase, noop_frame_phase, performance_complete, noop_frame_phase, unchanged_limit}},

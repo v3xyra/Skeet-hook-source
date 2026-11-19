@@ -3,7 +3,7 @@
   "archive_sha256": "9d1f1e5e4c7b91d7a047fb22a6bb0c1b074f6d29e011c7940c5b4000e7391bc1",
   "upstream": "https://github.com/LuaJIT/LuaJIT",
   "modifications": {
-    "src/lj_err.c": "Route guarded x86 native access violations through the Lua VM unwind before returning to the host.",
+    "src/lj_err.c": "Unwind guarded x86 native faults one Windows frame at a time. Ordinary Lua errors use the internal unwinder.",
     "src/lj_load.c": "Client bytecode gate43439986/433D75F1; exact stock XMODE syntax error when not loading builtin.",
     "src/lj_cdata.h": "Checked FFI access and typed no-op behavior for unavailable native addresses; interpreter and JIT.",
     "src/lj_cdata.c": "Bounds-checked VM-owned cdata avoids redundant page queries. External memory accesses retain their host checks.",
@@ -128,7 +128,7 @@
     "src/lj_emit_mips.h": "cb8d3975f4c5075135b3e6aa0063beb36bad08b080bfc7c2b40e412e6bfe6131",
     "src/lj_emit_ppc.h": "097e8953c80b035c0323de09eedf0175aeeae03da77ba6c171c70a08fa76d3fe",
     "src/lj_emit_x86.h": "78f21c255c77ecfbe61d5112fa7baaa1c46cb8254e4ac7877c47257d5e26ba52",
-    "src/lj_err.c": "d25b9f76f85baa8acf5648f4281c5b2d5d2aeb027f24647e94f94bc1c86aa001",
+    "src/lj_err.c": "b2525b777356dc666223b7d4099f2de676037697725ac29847a48ca658f0a275",
     "src/lj_err.h": "dbcc3d1ecbf68b10a81a2e5b09207d05c7aa57c1d2b8822128db539f9ba1476d",
     "src/lj_errmsg.h": "8e217358bcd6a9953c66d0e46e4a2c60c1039b0eba590a13b4b8929a0fbf832a",
     "src/lj_ff.h": "3e63df74dfb3642f71ba94e253ac26f33901ee74bbed93bb66aba7d59c28630a",

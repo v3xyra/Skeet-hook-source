@@ -5,8 +5,7 @@
 
 namespace skeet::esp {
 
-// 0x4340A644: native player names are terminated after 20 UTF-8 bytes before
-// MultiByteToWideChar(CP_UTF8, 0), including its incomplete-sequence behavior.
+// Display up to 20 Unicode code points from the engine's UTF-8 name field.
 std::u16string player_name(std::string_view utf8);
 
 void draw_box(ui::RenderQueue& queue, Rectangle box, std::uint32_t color);

@@ -1,6 +1,6 @@
-#include "skeet/network/exploit_owner.hpp"
-#include "skeet/network/exploit_phase1.hpp"
-#include "skeet/network/exploit_phase7.hpp"
+#include "skeet/network/tick_shift_owner.hpp"
+#include "skeet/network/tick_shift_phase1.hpp"
+#include "skeet/network/tick_shift_phase7.hpp"
 #include <array>
 #include <cstring>
 #include <new>
@@ -9,29 +9,29 @@
 namespace skeet::network {
 namespace {
 #if defined(_M_IX86) || defined(__i386__)
-#define EXPLOIT_MEMBER __thiscall
-#define EXPLOIT_FAST __fastcall
+#define TICK_SHIFT_MEMBER __thiscall
+#define TICK_SHIFT_FAST __fastcall
 #else
-#define EXPLOIT_MEMBER
-#define EXPLOIT_FAST
+#define TICK_SHIFT_MEMBER
+#define TICK_SHIFT_FAST
 #endif
-using PrimaryEntry = void(EXPLOIT_MEMBER*)(void*);
-struct ExploitInstance;
+using PrimaryEntry = void(TICK_SHIFT_MEMBER*)(void*);
+struct TickShiftInstance;
 struct HudEndpoint : hud::HudFrameCallback {
-    ExploitInstance* owner;
+    TickShiftInstance* owner;
 };
-void EXPLOIT_MEMBER destroy_entry(void*);
-void EXPLOIT_MEMBER unchanged(void*) {} //actual433CCE8E
-void EXPLOIT_MEMBER reset_entry(void*);
-void EXPLOIT_MEMBER refresh_entry(void*);
-void EXPLOIT_FAST hud_entry(void*, ui::RenderQueue*, void*, std::int32_t*);
+void TICK_SHIFT_MEMBER destroy_entry(void*);
+void TICK_SHIFT_MEMBER unchanged(void*) {} //actual433CCE8E
+void TICK_SHIFT_MEMBER reset_entry(void*);
+void TICK_SHIFT_MEMBER refresh_entry(void*);
+void TICK_SHIFT_FAST hud_entry(void*, ui::RenderQueue*, void*, std::int32_t*);
 const std::array<PrimaryEntry, 9> primary_table{destroy_entry, unchanged,     unchanged,
                                                 unchanged,     unchanged,     reset_entry,
                                                 unchanged,     refresh_entry, unchanged};
 const std::array<hud::HudFrameEntry, 1> hud_table{hud_entry};
 
-void require_source_bindings(const ExploitOwnerRegistries& registries,
-                             const ExploitOwnerBindings& bindings) {
+void require_source_bindings(const TickShiftOwnerRegistries& registries,
+                             const TickShiftOwnerBindings& bindings) {
     const auto* const image = &registries.data_updates.image();
     const auto& command = bindings.command;
     if (&registries.prediction.image() != image ||
@@ -39,31 +39,31 @@ void require_source_bindings(const ExploitOwnerRegistries& registries,
         &command.bindings.recharge_observers.image() != image ||
         &command.phase1.recharge_observers.image() != image ||
         &command.phase7.generated_observers.image() != image)
-        throw std::invalid_argument("Exploit phases must share the retained observer registries");
+        throw std::invalid_argument("Tick-shift phases must share the retained observer registries");
     auto& snapshots = image->native_cell<client::PredictionHistoryOwner*>(0x434759b4u);
     auto& history = image->native_cell<client::EntityCommandOwner*>(0x43475898u);
     if (&command.bindings.prediction_snapshots_owner != &snapshots ||
         &command.phase7.restricted_owner != &snapshots ||
         &command.bindings.prediction_history_owner != &history)
-        throw std::invalid_argument("Exploit phases must read the native history owner slots");
+        throw std::invalid_argument("Tick-shift phases must read the native history owner slots");
     if (&registries.primary.registry != &image->native_cell<engine::OwnerRegistry>(0x43475b78u) ||
         &registries.hud.registry != &image->native_cell<engine::OwnerRegistry>(0x43475a9cu) ||
         &registries.messages.registry != &image->native_cell<engine::OwnerRegistry>(0x43475b94u))
         throw std::invalid_argument(
-            "Exploit construction requires the native lifecycle, HUD and message registries");
+            "Tick-shift construction requires the native lifecycle, HUD and message registries");
 }
 
-struct ExploitInstance {
+struct TickShiftInstance {
     const PrimaryEntry* vtable = nullptr;
     engine::JobMemory memory;
-    ExploitOwnerBindings bindings;
+    TickShiftOwnerBindings bindings;
     HudEndpoint hud{{nullptr}, this};
-    ExploitMessageHandler message;
+    TickShiftMessageHandler message;
     client::NativeCommandPhaseReceiver command_receiver;
-    ExploitAcknowledgementOwner acknowledgement;
+    TickShiftAcknowledgementOwner acknowledgement;
 
-    ExploitInstance(const ExploitOwnerRegistries& registries, ConfigRegistries& config,
-                    ExploitOwnerBindings context)
+    TickShiftInstance(const TickShiftOwnerRegistries& registries, ConfigRegistries& config,
+                    TickShiftOwnerBindings context)
         : memory(registries.primary.memory), bindings(context),
           message(context.command.runtime.network, context.messages),
           acknowledgement{context.command.runtime, context.command.phases,
@@ -75,12 +75,12 @@ struct ExploitInstance {
         registries.data_updates.append(acknowledgement); //4337EFD9,+20
         registries.prediction.append(bindings.command.runtime); //4341CEE4,+28
         message.publish_table(); //native4346F240
-        registries.commands.publish(command_receiver, client::CommandOwnerId::exploit); //4347DF31
+        registries.commands.publish(command_receiver, client::CommandOwnerId::tick_shift); //4347DF31
         registries.data_updates.publish(acknowledgement); //4347DF38, after prediction registration
         registries.prediction.publish(bindings.command.runtime); //4347DF3F, table4346F7D0
         vtable = primary_table.data(); //native434707D0
         hud.vtable = hud_table.data(); //native43472688
-        rage::initialize_exploit_settings(config, bindings.command.controls.settings);
+        rage::initialize_tick_shift_settings(config, bindings.command.controls.settings);
         auto& runtime = bindings.command.runtime;
         auto& state = runtime.network;
         state.mode = 0;
@@ -101,21 +101,21 @@ struct ExploitInstance {
         //4347DEEB leaves flags/limits/rings/random-table/other scalar words.
     }
 };
-static_assert(sizeof(ExploitInstance) <= native_exploit_owner_allocation_size);
-void EXPLOIT_MEMBER destroy_entry(void* storage) {
-    destroy_exploit_owner(storage);
+static_assert(sizeof(TickShiftInstance) <= native_tick_shift_owner_allocation_size);
+void TICK_SHIFT_MEMBER destroy_entry(void* storage) {
+    destroy_tick_shift_owner(storage);
 }
-void EXPLOIT_MEMBER reset_entry(void* storage) {
-    reset_exploit_command_owner(static_cast<ExploitInstance*>(storage)->bindings.command);
+void TICK_SHIFT_MEMBER reset_entry(void* storage) {
+    reset_tick_shift_command_owner(static_cast<TickShiftInstance*>(storage)->bindings.command);
 }
-void EXPLOIT_MEMBER refresh_entry(void* storage) {
-    refresh_exploit_owner(storage);
+void TICK_SHIFT_MEMBER refresh_entry(void* storage) {
+    refresh_tick_shift_owner(storage);
 }
-void EXPLOIT_FAST hud_entry(void* endpoint, ui::RenderQueue* queue, void* player,
+void TICK_SHIFT_FAST hud_entry(void* endpoint, ui::RenderQueue* queue, void* player,
                             std::int32_t* cursor) {
     auto& owner = *static_cast<HudEndpoint*>(static_cast<hud::HudFrameCallback*>(endpoint))->owner;
     const auto& b = owner.bindings.hud;
-    hud::draw_exploit_indicators(*queue, b.scripts, owner.bindings.command.runtime.network,
+    hud::draw_tick_shift_indicators(*queue, b.scripts, owner.bindings.command.runtime.network,
                                  b.shared_timer, b.indicators, player, b.interfaces, b.frame_time,
                                  *cursor, b.layout);
 }
@@ -132,54 +132,54 @@ void* allocate(engine::JobMemory memory, std::size_t size) {
     return reinterpret_cast<void*>(header + 16);
 }
 }
-std::size_t exploit_owner_size() noexcept {
-    return sizeof(ExploitInstance);
+std::size_t tick_shift_owner_size() noexcept {
+    return sizeof(TickShiftInstance);
 }
-void construct_exploit_owner(void* storage, const ExploitOwnerRegistries& registries,
-                             ConfigRegistries& config, ExploitOwnerBindings bindings) {
+void construct_tick_shift_owner(void* storage, const TickShiftOwnerRegistries& registries,
+                             ConfigRegistries& config, TickShiftOwnerBindings bindings) {
     require_source_bindings(registries, bindings);
-    ::new (storage) ExploitInstance(registries, config, bindings);
+    ::new (storage) TickShiftInstance(registries, config, bindings);
 }
-void* allocate_exploit_owner_storage(engine::JobMemory memory) {
-    return allocate(memory, native_exploit_owner_allocation_size);
+void* allocate_tick_shift_owner_storage(engine::JobMemory memory) {
+    return allocate(memory, native_tick_shift_owner_allocation_size);
 }
-void construct_allocated_exploit_owner(void* storage, const ExploitOwnerRegistries& registries,
-                                       ConfigRegistries& config, ExploitOwnerBindings bindings) {
+void construct_allocated_tick_shift_owner(void* storage, const TickShiftOwnerRegistries& registries,
+                                       ConfigRegistries& config, TickShiftOwnerBindings bindings) {
     require_source_bindings(registries, bindings);
     //43387448 uses HEAP_ZERO_MEMORY. Canonical value fields live outside the
     // semantic endpoint allocation, so project those zeroed native words here.
     // Placement construction itself deliberately preserves untouched words.
     auto& command = bindings.command;
-    command.controls.settings = rage::ExploitSettings{};
+    command.controls.settings = rage::TickShiftSettings{};
     auto& runtime = command.runtime;
-    runtime.network = ExploitState{};
+    runtime.network = TickShiftState{};
     runtime.field_f0 = 0;
     runtime.transition_command_110 = 0;
     runtime.low_health_120 = 0;
     runtime.field_130 = 0;
     runtime.last_flush_command_134 = 0;
-    runtime.command_ticks.fill(ExploitCommandTick{0, 0});
+    runtime.command_ticks.fill(TickShiftCommandTick{0, 0});
     runtime.generated_commands.fill(0);
     command.phases.observed_ack_10c = 0;
     command.phases.recharge_ready_command_11c = 0;
     command.weapon_command_12c = 0;
-    construct_exploit_owner(storage, registries, config, bindings);
+    construct_tick_shift_owner(storage, registries, config, bindings);
 }
-void destroy_exploit_owner(void* storage) {
+void destroy_tick_shift_owner(void* storage) {
     if (!storage)
         return; //actual433837D0 null guard
-    auto* const owner = static_cast<ExploitInstance*>(storage);
+    auto* const owner = static_cast<TickShiftInstance*>(storage);
     const auto memory = owner->memory;
-    owner->~ExploitInstance();
+    owner->~TickShiftInstance();
     auto* const bytes = static_cast<std::byte*>(storage);
     std::uint32_t displacement;
     std::memcpy(&displacement, bytes - 8, 4);
     memory.free(memory.process_heap, 0, bytes - 16 - displacement);
 }
-void refresh_exploit_owner(void* storage) {
-    auto& owner = *static_cast<ExploitInstance*>(storage);
+void refresh_tick_shift_owner(void* storage) {
+    auto& owner = *static_cast<TickShiftInstance*>(storage);
     owner.vtable[5](storage);
 }
-#undef EXPLOIT_MEMBER
-#undef EXPLOIT_FAST
+#undef TICK_SHIFT_MEMBER
+#undef TICK_SHIFT_FAST
 } //namespace skeet::network

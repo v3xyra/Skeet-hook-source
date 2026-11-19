@@ -30,8 +30,8 @@ void LiveRageHudBinding::draw(ui::RenderQueue& queue, void* player, std::int32_t
     }
     esp::draw_live_hitbox_highlight(queue, visualization, highlight, player, highlight_context);
 }
-void ExploitHudBinding::draw(ui::RenderQueue& queue, void* player, std::int32_t& cursor) const {
-    draw_exploit_indicators(queue, scripts, state, shared_timer, indicators, player, interfaces,
+void TickShiftHudBinding::draw(ui::RenderQueue& queue, void* player, std::int32_t& cursor) const {
+    draw_tick_shift_indicators(queue, scripts, state, shared_timer, indicators, player, interfaces,
                             frame_time, cursor, layout);
 }
 void MovementHudBinding::draw(ui::RenderQueue& queue, void*, std::int32_t& cursor) const {

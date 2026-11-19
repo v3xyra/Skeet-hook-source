@@ -8,7 +8,7 @@
 #include "skeet/engine/startup_convars.hpp"
 #include "skeet/engine/frame_update.hpp"
 #include "skeet/events/registry.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/rage/spread.hpp"
 
 namespace skeet::client {
@@ -40,7 +40,7 @@ struct FeedbackOwnerBindings {
     engine::OwnerRegistryBinding packets; //4347584C
     engine::OwnerRegistryBinding frames; //43475AD8
     engine::OwnerRegistryBinding positions; //43475930/34/38
-    network::ExploitRechargeObserverRegistry& recharge; //43475784
+    network::TickShiftRechargeObserverRegistry& recharge; //43475784
     ConfigRegistries& configuration;
     events::EventRegistry& events;
     ShotLogSettings& settings;

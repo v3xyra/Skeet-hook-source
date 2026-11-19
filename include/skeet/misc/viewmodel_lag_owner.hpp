@@ -3,7 +3,7 @@
 #include "skeet/client/command_phase_registry.hpp"
 #include "skeet/client/entity_observer_registry.hpp"
 #include "skeet/engine/frame_update.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/prediction/observer_registry.hpp"
 #include <vector>
 
@@ -18,7 +18,7 @@ struct ViewmodelLagOwnerRegistries {
     prediction::ObserverRegistry& prediction; //43475AB0
     client::EntityObserverRegistry& entities; //43475BA8
     client::CommandPhaseRegistry& commands; //434757A0
-    network::ExploitRechargeObserverRegistry& recharge; //43475784
+    network::TickShiftRechargeObserverRegistry& recharge; //43475784
     engine::OwnerRegistryBinding frames; //43475AD8
 };
 

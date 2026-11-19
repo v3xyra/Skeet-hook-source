@@ -15,7 +15,7 @@ struct SourceScriptModuleInputs;
 namespace skeet::client {
 class ClientRuntimeStorage;
 class PacketRuntimeOwner;
-class ExploitRuntimeOwner;
+class TickShiftRuntimeOwner;
 struct NativeStartupSourceGraph;
 
 // The five combat factories borrow their already composed physical domain
@@ -24,12 +24,12 @@ struct NativeStartupSourceGraph;
 class CombatRuntimeOwner final {
 public:
     // SourceScriptRuntimeOwner's genuine module inputs must already be bound.
-    CombatRuntimeOwner(ClientRuntimeStorage&, PacketRuntimeOwner&, ExploitRuntimeOwner&,
+    CombatRuntimeOwner(ClientRuntimeStorage&, PacketRuntimeOwner&, TickShiftRuntimeOwner&,
                        anti_aim::RuntimeOwner&, effects::EffectsRuntimeOwner&,
                        script::SourceScriptRuntimeOwner&);
     // The late production phase may bind those actual module inputs here,
     // after CONFIG/RootMenu contexts exist and before ScriptOwner is created.
-    CombatRuntimeOwner(ClientRuntimeStorage&, PacketRuntimeOwner&, ExploitRuntimeOwner&,
+    CombatRuntimeOwner(ClientRuntimeStorage&, PacketRuntimeOwner&, TickShiftRuntimeOwner&,
                        anti_aim::RuntimeOwner&, effects::EffectsRuntimeOwner&,
                        script::SourceScriptRuntimeOwner&, script::SourceScriptModuleInputs);
     ~CombatRuntimeOwner();

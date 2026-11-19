@@ -14,7 +14,7 @@
 #include "skeet/client/shared_esp_runtime_owner.hpp"
 #include "skeet/client/misc_runtime_owner.hpp"
 #include "skeet/client/packet_runtime_owner.hpp"
-#include "skeet/client/exploit_runtime_owner.hpp"
+#include "skeet/client/tick_shift_runtime_owner.hpp"
 #include "skeet/client/entity_command_runtime_owner.hpp"
 #include "skeet/client/prediction_history_runtime_owner.hpp"
 #include "skeet/client/buffered_shot_runtime_owner.hpp"
@@ -122,7 +122,7 @@ struct SourceFeatureRuntime::Data {
     skins::SkinsRuntimeOwner skins;
     PacketRuntimeOwner packet;
     anti_aim::RuntimeOwner anti_aim;
-    ExploitRuntimeOwner exploit;
+    TickShiftRuntimeOwner tick_shift;
     misc::SettingsRuntimeOwner settings;
     PredictionHistoryRuntimeOwner prediction_history;
     EntityCommandRuntimeOwner entity_commands;
@@ -199,7 +199,7 @@ struct SourceFeatureRuntime::Data {
                  imports.packet),
           anti_aim(in.storage, in.engine, in.configuration, scene, bones, movement, capture,
                    history, target_refresh, visual, in.scripts, imports.anti_aim),
-          exploit(in.storage, in.engine, in.configuration, history, movement, commands, local,
+          tick_shift(in.storage, in.engine, in.configuration, history, movement, commands, local,
                   scene, visual, in.scripts),
           settings(in.storage, in.configuration, in.main_window, in.presets, in.shutdown.request()),
           prediction_history(in.storage, in.engine, in.configuration, local, history, movement,
@@ -250,7 +250,7 @@ struct SourceFeatureRuntime::Data {
                 local.queries(), local.physics(), local.local_hooks(), local.command_hooks()});
         visual.initialize_game_system(in.shutdown.finalizer());
         script_api.bind_modules(in.presets, in.main_window);
-        combat = std::make_unique<CombatRuntimeOwner>(in.storage, packet, exploit, anti_aim,
+        combat = std::make_unique<CombatRuntimeOwner>(in.storage, packet, tick_shift, anti_aim,
                                                       effects, in.scripts);
         world =
             std::make_unique<WorldRuntimeOwner>(in.storage, in.engine, in.configuration, history,

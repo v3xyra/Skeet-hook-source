@@ -100,9 +100,9 @@ struct AimbotSettings {
     BooleanConfig force_body_aim_on_peek; // +15C
 };
 
-// One native owner (0x4347DEEC) supplies both RAGE exploits and the AA
+// One native owner (0x4347DEEC) supplies both RAGE tick-shift settings and the AA
 // on-shot/fake-peek controls. These shared descriptors must be registered once.
-struct ExploitSettings {
+struct TickShiftSettings {
     BooleanConfig on_shot_anti_aim; // +030
     HotkeyConfig on_shot_key; // +044; Escape, always
     IntegerConfig double_tap_fake_lag_limit; // +06C; 2
@@ -124,7 +124,7 @@ struct PerformanceSettings {
 
 void initialize_global_settings(ConfigRegistries&, GlobalSettings&) noexcept;
 void initialize_aimbot_settings(ConfigRegistries&, AimbotSettings&) noexcept;
-void initialize_exploit_settings(ConfigRegistries&, ExploitSettings&) noexcept;
+void initialize_tick_shift_settings(ConfigRegistries&, TickShiftSettings&) noexcept;
 void initialize_shot_log_settings(ConfigRegistries&, ShotLogSettings&) noexcept;
 void initialize_performance_settings(ConfigRegistries&, PerformanceSettings&) noexcept;
 
@@ -135,7 +135,7 @@ void initialize_performance_settings(ConfigRegistries&, PerformanceSettings&) no
 struct Settings {
     GlobalSettings global;
     AimbotSettings aimbot;
-    ExploitSettings exploits;
+    TickShiftSettings tick_shift;
     ShotLogSettings shot_log;
     PerformanceSettings performance;
     QuickPeekConfig quick_peek;

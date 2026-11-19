@@ -1,5 +1,5 @@
 #include "skeet/network/data_update_observers.hpp"
-#include "skeet/network/exploit_acknowledgement.hpp"
+#include "skeet/network/tick_shift_acknowledgement.hpp"
 #include "skeet/client/entity_command_owner.hpp"
 #include "skeet/client/prediction_history_owner.hpp"
 #include "skeet/skins/native_agents.hpp"
@@ -17,7 +17,7 @@ namespace {
 constexpr std::array<DataUpdateObserverTable, 4> tables{{
     {DataUpdateObserverId::prediction_history, {{0x433C95B7U, 0x433F4628U}}},
     {DataUpdateObserverId::agents, {{0x433C95B7U, 0x433466F7U}}},
-    {DataUpdateObserverId::exploit, {{0x433CCC20U, 0x433EEA67U}}},
+    {DataUpdateObserverId::tick_shift, {{0x433CCC20U, 0x433EEA67U}}},
     {DataUpdateObserverId::entity_commands, {{0x433D67DFU, 0x43403681U}}},
 }};
 
@@ -32,14 +32,14 @@ void SKEET_DATA_UPDATE_FASTCALL finish_agents(NativeDataUpdateReceiver* receiver
                                               std::int32_t update) {
     static_cast<skins::NativeAgentRuntime*>(receiver->source)->process(player, update);
 }
-void SKEET_DATA_UPDATE_FASTCALL capture_exploit(NativeDataUpdateReceiver* receiver, void* player,
+void SKEET_DATA_UPDATE_FASTCALL capture_tick_shift(NativeDataUpdateReceiver* receiver, void* player,
                                                 std::int32_t) {
-    capture_exploit_acknowledgement(*static_cast<ExploitAcknowledgementOwner*>(receiver->source),
+    capture_tick_shift_acknowledgement(*static_cast<TickShiftAcknowledgementOwner*>(receiver->source),
                                     player);
 }
-void SKEET_DATA_UPDATE_FASTCALL finish_exploit(NativeDataUpdateReceiver* receiver, void* player,
+void SKEET_DATA_UPDATE_FASTCALL finish_tick_shift(NativeDataUpdateReceiver* receiver, void* player,
                                                std::int32_t) {
-    finish_exploit_acknowledgement(*static_cast<ExploitAcknowledgementOwner*>(receiver->source),
+    finish_tick_shift_acknowledgement(*static_cast<TickShiftAcknowledgementOwner*>(receiver->source),
                                    player);
 }
 void SKEET_DATA_UPDATE_FASTCALL capture_entity_commands(NativeDataUpdateReceiver* receiver,
@@ -54,14 +54,14 @@ void SKEET_DATA_UPDATE_FASTCALL finish_entity_commands(NativeDataUpdateReceiver*
 }
 const NativeDataUpdateVtable prediction_entries{empty_capture, finish_prediction};
 const NativeDataUpdateVtable agent_entries{empty_capture, finish_agents};
-const NativeDataUpdateVtable exploit_entries{capture_exploit, finish_exploit};
+const NativeDataUpdateVtable tick_shift_entries{capture_tick_shift, finish_tick_shift};
 const NativeDataUpdateVtable entity_entries{capture_entity_commands, finish_entity_commands};
 
 NativeDataUpdateReceiver& source_receiver(void* object) {
     auto* const receiver = static_cast<NativeDataUpdateReceiver*>(object);
     if (!receiver ||
         (receiver->vtable != &prediction_entries && receiver->vtable != &agent_entries &&
-         receiver->vtable != &exploit_entries && receiver->vtable != &entity_entries))
+         receiver->vtable != &tick_shift_entries && receiver->vtable != &entity_entries))
         throw std::logic_error("Native data-update entry has no concrete source receiver binding");
     // Captured native vtable addresses are identifiers only. An unbridged
     // image receiver must not execute captured code as a dispatch substitute.
@@ -104,7 +104,7 @@ void DataUpdateObserverRegistry::append(client::PredictionHistoryOwner& owner) {
 void DataUpdateObserverRegistry::append(skins::NativeAgentRuntime& owner) {
     append_receiver(owner.data_update_receiver_, &owner);
 }
-void DataUpdateObserverRegistry::append(ExploitAcknowledgementOwner& owner) {
+void DataUpdateObserverRegistry::append(TickShiftAcknowledgementOwner& owner) {
     append_receiver(owner.data_update_receiver, &owner);
 }
 void DataUpdateObserverRegistry::append(client::EntityCommandOwner& owner) {
@@ -116,8 +116,8 @@ void DataUpdateObserverRegistry::publish(client::PredictionHistoryOwner& owner) 
 void DataUpdateObserverRegistry::publish(skins::NativeAgentRuntime& owner) const noexcept {
     owner.data_update_receiver_.vtable = &agent_entries;
 }
-void DataUpdateObserverRegistry::publish(ExploitAcknowledgementOwner& owner) const noexcept {
-    owner.data_update_receiver.vtable = &exploit_entries;
+void DataUpdateObserverRegistry::publish(TickShiftAcknowledgementOwner& owner) const noexcept {
+    owner.data_update_receiver.vtable = &tick_shift_entries;
 }
 void DataUpdateObserverRegistry::publish(client::EntityCommandOwner& owner) const noexcept {
     owner.data_update_receiver.vtable = &entity_entries;

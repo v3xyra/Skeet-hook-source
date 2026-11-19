@@ -160,7 +160,7 @@ public:
     client::NativeCommandPhaseReceiver command_receiver;
     FeedbackEntityOwner entities;
     client::NativeEntityObserverReceiver entity_receiver;
-    network::ExploitShotFeedbackObserver recharge;
+    network::TickShiftShotFeedbackObserver recharge;
     PacketEndpoint packet;
     FrameEndpoint frame;
     PositionEndpoint position;

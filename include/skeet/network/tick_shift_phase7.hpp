@@ -1,6 +1,6 @@
 #pragma once
-#include "exploit_runtime.hpp"
-#include "exploit_observers.hpp"
+#include "tick_shift_runtime.hpp"
+#include "tick_shift_observers.hpp"
 #include "skeet/prediction/command.hpp"
 
 namespace skeet {
@@ -32,20 +32,20 @@ struct RestrictedPlayerCommandOwner;
 struct RestrictedPlayerCommandBindings;
 }
 namespace network {
-struct ExploitPhaseState;
+struct TickShiftPhaseState;
 
-struct ExploitPhase7Offsets {
+struct TickShiftPhase7Offsets {
     std::ptrdiff_t buttons_4746d093, previous_buttons_e765ed03;
     std::ptrdiff_t pressed_buttons_3db8eb39, released_buttons_356b64e8;
     std::ptrdiff_t command_copy_5df1a4bc, command_marker_a249061a;
 };
-struct ExploitPhase7Bindings {
+struct TickShiftPhase7Bindings {
     const client::CommandCaptureRuntimeOwner& capture;
     const client::CommandCaptureOffsets& capture_offsets;
     const prediction::CommandBindings& prediction_bindings;
     const prediction::CommandPlayerOffsets& prediction_player_offsets;
     const prediction::ObserverRegistry& prediction_observers; //43475AB0/AB4
-    const ExploitRechargeObserverRegistry& generated_observers; //43475784/788
+    const TickShiftRechargeObserverRegistry& generated_observers; //43475784/788
     prediction::SeedGenerator const& seed_generator; //actual434679AC
     std::int32_t* const& prediction_seed; //actual*43468328
     script::SourceScriptRuntimeOwner& scripts;
@@ -70,15 +70,15 @@ struct ExploitPhase7Bindings {
     client::PredictionHistoryOwner* const& restricted_owner; //live434759B4
     const client::RestrictedPlayerCommandBindings& restricted;
     std::uint8_t* const& transform_override; //actual434683D0
-    ExploitPhase7Offsets offsets;
+    TickShiftPhase7Offsets offsets;
 };
 
 // Complete43359E37, with concrete source calls for generated movement/AA,
 // firing, simulation, command capture and restricted animation. The caller
 // supplies the original frame's separate send byte, retaining its x86 layout.
-void process_exploit_phase7(ExploitRuntimeState&, ExploitPhaseState&, client::CommandFrame&,
+void process_tick_shift_phase7(TickShiftRuntimeState&, TickShiftPhaseState&, client::CommandFrame&,
                             void* player, client::Command&, std::uint8_t& send_packet,
-                            const ExploitRuntimeSettings&, ExploitRuntimeBindings&,
-                            ExploitPhase7Bindings&, std::uint32_t& command_flags);
+                            const TickShiftRuntimeSettings&, TickShiftRuntimeBindings&,
+                            TickShiftPhase7Bindings&, std::uint32_t& command_flags);
 } //namespace network
 } //namespace skeet

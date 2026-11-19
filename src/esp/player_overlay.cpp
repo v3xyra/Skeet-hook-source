@@ -9,14 +9,22 @@ namespace skeet::esp {
 using namespace detail;
 
 std::u16string player_name(std::string_view utf8) {
-    char input[21]{};
-    std::copy_n(utf8.data(), std::min<std::size_t>(utf8.size(), 20), input);
-    wchar_t output[256];
-    const auto count = MultiByteToWideChar(CP_UTF8, 0, input, -1, output, 256);
-    if (count <= 1)
+    // Even 20 four-byte characters fit in this prefix. Decode before applying
+    // the display limit so the last visible character is always complete.
+    wchar_t output[80];
+    utf8 = utf8.substr(0, std::size(output));
+    utf8 = utf8.substr(0, utf8.find('\0'));
+    if (utf8.empty())
         return {};
-    static_assert(sizeof(wchar_t) == sizeof(char16_t));
-    return {reinterpret_cast<const char16_t*>(output), std::size_t(count - 1)};
+    const auto count = MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()),
+                                           output, static_cast<int>(std::size(output)));
+    int units = 0;
+    for (int characters = 0; units < count && characters < 20; ++characters) {
+        if (IS_HIGH_SURROGATE(output[units]) && units + 1 < count)
+            ++units;
+        ++units;
+    }
+    return {output, output + units};
 }
 
 void draw_box(ui::RenderQueue& q, Rectangle b, std::uint32_t color) { // 0x4340AB68..0x4340AC1C

@@ -112,7 +112,7 @@ struct ScriptCommand {
     std::uint32_t buttons;
     std::int32_t weapon_select, weapon_subtype;
     float move_yaw;
-    std::uint8_t exploit_state, state_bit_3, state_bit_18, state_bit_20;
+    std::uint8_t tick_shift_state, state_bit_3, state_bit_18, state_bit_20;
 };
 static_assert(sizeof(ScriptCommand) == 0x34);
 static_assert(offsetof(ScriptCommand, buttons) == 0x20);
@@ -120,7 +120,7 @@ static_assert(offsetof(ScriptCommand, buttons) == 0x20);
 // Exact snapshot and apply blocks of 43347D5C. The callback sees the same
 // ScriptCommand object, which the native runtime wraps using registry slot 1.
 struct ScriptCommandBaseline {
-    std::uint8_t send_packet, exploit_state, state_bit_18;
+    std::uint8_t send_packet, tick_shift_state, state_bit_18;
 };
 ScriptCommandBaseline capture_script_command(ScriptCommand&, const Command&, float move_yaw,
                                              std::uint8_t send_packet, std::int32_t choked_commands,

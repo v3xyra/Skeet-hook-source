@@ -1,7 +1,5 @@
 #include "skeet/hud/observer_panel.hpp"
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
+#include "skeet/esp/player_overlay.hpp"
 #include <bit>
 
 namespace skeet::hud {
@@ -24,19 +22,14 @@ void draw_observer_panel(ui::RenderQueue& queue, esp::PlayerFrameState& state,
     ObserverPlayerInfo info;
     if (!engine.player_info(engine.context, entity_index, info) || info.hltv || info.fake_player)
         return;
-    info.name[20] = '\0';
-    std::array<wchar_t, 256> wide;
-    const auto count = MultiByteToWideChar(CP_UTF8, 0, info.name.data(), -1, wide.data(),
-                                           static_cast<int>(wide.size()));
-    if (count <= 1)
+    const auto name = esp::player_name({info.name.data(), info.name.size()});
+    if (name.empty())
         return;
     const auto row = std::uint32_t(state.transient);
     state.transient = std::bit_cast<std::int32_t>(row + 1);
     const auto x = std::bit_cast<std::int32_t>(std::uint32_t(screen_width) - 10);
     const auto y = std::bit_cast<std::int32_t>(row * 20 + 5);
-    static_assert(sizeof(wchar_t) == sizeof(char16_t));
-    queue.text(x, y, 0xC8FFFFFFu, 0x88, 0,
-               {reinterpret_cast<const char16_t*>(wide.data()), std::size_t(count - 1)});
+    queue.text(x, y, 0xC8FFFFFFu, 0x88, 0, name);
 }
 void draw_prepared_observer(ui::RenderQueue& queue, esp::PlayerFrameState& state,
                             const ObserverEngine& engine, const esp::RuntimePlayer* initial_view,

@@ -30,11 +30,11 @@ public:
     QuickSwitchRuntime& runtime;
     CommandOwner command;
     client::NativeCommandPhaseReceiver command_receiver{};
-    network::NativeExploitRechargeReceiver recharge_receiver{};
+    network::NativeTickShiftRechargeReceiver recharge_receiver{};
 
     QuickSwitchLifecycleOwner(engine::OwnerRegistryBinding lifecycle,
                               client::CommandPhaseRegistry& commands,
-                              network::ExploitRechargeObserverRegistry& recharge,
+                              network::TickShiftRechargeObserverRegistry& recharge,
                               prediction::ObserverRegistry& prediction,
                               ConfigRegistries& registries, QuickSwitchConfig& config,
                               QuickSwitchRuntime& source)
@@ -78,7 +78,7 @@ std::size_t quick_switch_owner_size() noexcept {
 }
 QuickSwitchLifecycleOwner& construct_quick_switch(
     void* storage, engine::OwnerRegistryBinding lifecycle, client::CommandPhaseRegistry& commands,
-    network::ExploitRechargeObserverRegistry& recharge, prediction::ObserverRegistry& prediction,
+    network::TickShiftRechargeObserverRegistry& recharge, prediction::ObserverRegistry& prediction,
     ConfigRegistries& registries, QuickSwitchConfig& config, QuickSwitchRuntime& runtime) {
     const auto& image = prediction.image();
     if (&recharge.image() != &image ||

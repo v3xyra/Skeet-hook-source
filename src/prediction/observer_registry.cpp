@@ -4,7 +4,7 @@
 #include "skeet/client/entity_command_owner.hpp"
 #include "skeet/misc/quick_switch.hpp"
 #include "skeet/misc/viewmodel_lag.hpp"
-#include "skeet/network/exploit_runtime.hpp"
+#include "skeet/network/tick_shift_runtime.hpp"
 #include "skeet/script/bridge.hpp"
 #include "skeet/engine/unload.hpp"
 #include <stdexcept>
@@ -20,7 +20,7 @@ namespace {
 constexpr std::array<ObserverTable, 6> tables{{
     {ObserverOwnerId::prediction_history, {0x4332C3C9u, 0x4340B612u, 0x433E9F3Bu, 0x433C95B7u}},
     {ObserverOwnerId::quick_switch, {0x4341F4A3u, 0x43400E0Du, 0x433E9F3Bu, 0x433C95B7u}},
-    {ObserverOwnerId::exploit, {0x433C95B7u, 0x433C95B7u, 0x43328C18u, 0x433C95B7u}},
+    {ObserverOwnerId::tick_shift, {0x433C95B7u, 0x433C95B7u, 0x43328C18u, 0x433C95B7u}},
     {ObserverOwnerId::entity_commands, {0x4332BBA4u, 0x43382703u, 0x433E9F3Bu, 0x433B265Cu}},
     {ObserverOwnerId::script, {0x433F48F6u, 0x433C13C5u, 0x433E9F3Bu, 0x433C95B7u}},
     {ObserverOwnerId::viewmodel_lag, {0x4332EFD2u, 0x43367D42u, 0x433E9F3Bu, 0x4332B1EBu}},
@@ -52,11 +52,11 @@ void PREDICTION_OBSERVER_FAST finish_quick_switch(NativePredictionObserverReceiv
                                                   void* player, const client::Command* command) {
     static_cast<misc::QuickSwitchRuntime*>(receiver->source)->finish_prediction(player, *command);
 }
-std::int32_t PREDICTION_OBSERVER_FAST exploit_tick(NativePredictionObserverReceiver* receiver,
+std::int32_t PREDICTION_OBSERVER_FAST tick_shift_tick(NativePredictionObserverReceiver* receiver,
                                                    std::int32_t number, std::int32_t tick) {
     //43328C18 reads the canonical full-owner+200 command/tick producer.
     const auto& stored =
-        static_cast<network::ExploitRuntimeState*>(receiver->source)->command_ticks[number % 150];
+        static_cast<network::TickShiftRuntimeState*>(receiver->source)->command_ticks[number % 150];
     return stored.command == number ? stored.tick : tick;
 }
 void PREDICTION_OBSERVER_FAST capture_entity_commands(NativePredictionObserverReceiver* receiver,
@@ -113,7 +113,7 @@ const NativePredictionObserverVtable history_entries{capture_history, finish_his
                                                      unchanged_tick, empty_rejected};
 const NativePredictionObserverVtable quick_switch_entries{capture_quick_switch, finish_quick_switch,
                                                           unchanged_tick, empty_rejected};
-const NativePredictionObserverVtable exploit_entries{empty_command, empty_command, exploit_tick,
+const NativePredictionObserverVtable tick_shift_entries{empty_command, empty_command, tick_shift_tick,
                                                      empty_rejected};
 const NativePredictionObserverVtable entity_entries{capture_entity_commands, finish_entity_commands,
                                                     unchanged_tick, reject_entity_commands};
@@ -126,7 +126,7 @@ NativePredictionObserverReceiver& source_receiver(void* endpoint) {
     auto* receiver = static_cast<NativePredictionObserverReceiver*>(endpoint);
     if (!receiver ||
         (receiver->vtable != &history_entries && receiver->vtable != &quick_switch_entries &&
-         receiver->vtable != &exploit_entries && receiver->vtable != &entity_entries &&
+         receiver->vtable != &tick_shift_entries && receiver->vtable != &entity_entries &&
          receiver->vtable != &script_entries && receiver->vtable != &viewmodel_entries))
         throw std::logic_error("Native prediction entry has no concrete source receiver binding");
     return *receiver;
@@ -171,7 +171,7 @@ void ObserverRegistry::append(client::PredictionHistoryOwner& owner) {
 void ObserverRegistry::append(misc::QuickSwitchRuntime& owner) {
     append_receiver(owner.prediction_receiver, &owner);
 }
-void ObserverRegistry::append(network::ExploitRuntimeState& owner) {
+void ObserverRegistry::append(network::TickShiftRuntimeState& owner) {
     append_receiver(owner.prediction_receiver, &owner);
 }
 void ObserverRegistry::append(client::EntityCommandOwner& owner) {
@@ -189,8 +189,8 @@ void ObserverRegistry::publish(client::PredictionHistoryOwner& owner) const noex
 void ObserverRegistry::publish(misc::QuickSwitchRuntime& owner) const noexcept {
     owner.prediction_receiver.vtable = &quick_switch_entries;
 }
-void ObserverRegistry::publish(network::ExploitRuntimeState& owner) const noexcept {
-    owner.prediction_receiver.vtable = &exploit_entries;
+void ObserverRegistry::publish(network::TickShiftRuntimeState& owner) const noexcept {
+    owner.prediction_receiver.vtable = &tick_shift_entries;
 }
 void ObserverRegistry::publish(client::EntityCommandOwner& owner) const noexcept {
     owner.prediction_receiver.vtable = &entity_entries;

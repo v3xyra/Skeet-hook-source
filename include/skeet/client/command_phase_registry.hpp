@@ -14,7 +14,7 @@ enum class CommandOwnerId : std::uint32_t {
     owner_4346ff8c = 0x4346FF8Cu,
     automatic_weapons = 0x4346F244u,
     quick_switch = 0x4346FC24u,
-    exploit = 0x4346EDD4u,
+    tick_shift = 0x4346EDD4u,
     owner_43472148 = 0x43472148u,
     owner_4346eed8 = 0x4346EED8u,
     owner_4346dc2c = 0x4346DC2Cu,

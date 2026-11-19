@@ -73,7 +73,7 @@ struct TargetPredictionBindings {
 };
 // Shared50E1E..51547 /538BF..54011. Copies the newest complete record,
 // refreshes its actual attachments, traces present/future damage and raises D0
-// only when the projected shot-count improves under the original exploit gates.
+// only when the projected shot-count improves under the original tick-shift gates.
 void refine_acquisition_minimum_damage(const client::CommandFrame&, void* target,
                                        client::PlayerState&, AcquisitionTargetSettings&,
                                        const TargetPredictionBindings&);

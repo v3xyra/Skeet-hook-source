@@ -15,7 +15,7 @@
 #include "skeet/client/shutdown.hpp"
 #include "skeet/prediction/observer_registry.hpp"
 #include "skeet/network/data_update_observers.hpp"
-#include "skeet/network/exploit_observers.hpp"
+#include "skeet/network/tick_shift_observers.hpp"
 #include "skeet/events/registry.hpp"
 #include "skeet/menu/settings_menu_storage.hpp"
 #include "skeet/menu/startup_data.hpp"
@@ -91,7 +91,7 @@ public:
     network::DataUpdateObserverRegistry& data_update_observers() noexcept {
         return data_updates_;
     }
-    network::ExploitRechargeObserverRegistry& recharge_observers() noexcept {
+    network::TickShiftRechargeObserverRegistry& recharge_observers() noexcept {
         return recharge_;
     }
     engine::NativeOffsetStorage& offsets() noexcept {
@@ -144,7 +144,7 @@ private:
     EntityObserverRegistry entities_;
     prediction::ObserverRegistry predictions_;
     network::DataUpdateObserverRegistry data_updates_;
-    network::ExploitRechargeObserverRegistry recharge_;
+    network::TickShiftRechargeObserverRegistry recharge_;
     engine::NativeOffsetStorage offsets_;
     events::EventNameStorage event_names_;
     events::EventRegistry events_;

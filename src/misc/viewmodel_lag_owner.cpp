@@ -49,7 +49,7 @@ public:
     prediction::ViewmodelPredictionObserver prediction;
     client::NativeEntityObserverReceiver entity_receiver{};
     client::NativeCommandPhaseReceiver command_receiver{};
-    network::ExploitViewmodelRecharge recharge;
+    network::TickShiftViewmodelRecharge recharge;
     FrameEndpoint frame{{nullptr}, this};
 
     ViewmodelLagOwner(const ViewmodelLagOwnerRegistries& registries, ViewmodelHooksRuntime& runtime)
